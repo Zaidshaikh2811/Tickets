@@ -27,6 +27,17 @@ const userSchema = new mongoose.Schema<UserDoc>({
     name: { type: String, required: true },
     createdAt: { type: Date, default: Date.now },
     updatedAt: { type: Date, default: Date.now }
+}, {
+    toJSON: {
+        transform(doc, ret) {
+            ret.id = ret._id;
+            delete ret._id;
+            delete ret.__v;
+            delete ret.password;
+            delete ret.createdAt;
+            delete ret.updatedAt;
+        }
+    }
 });
 
 

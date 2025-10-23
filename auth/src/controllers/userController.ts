@@ -3,16 +3,21 @@ import { User } from "../models/users";
 import jwt from "jsonwebtoken";
 
 
-export const getCurrentUser = (req: Request, res: Response) => {
+export const getCurrentUser = async (req: Request, res: Response) => {
     try {
         const { email } = req.body;
 
-        const currentUser = User.findOne({ email });
+        const currentUser = await User.findOne({ email });
+        console.log('Current User:', currentUser);
+
         if (!currentUser) {
             res.status(404).json({ error: "User not found" });
             return;
         }
-        res.status(200).json({ user: { name: currentUser?.name, email: currentUser?.email } });
+        res.status(200).json({
+            message: "Current user fetched successfully",
+            user: currentUser
+        });
 
     } catch (err) {
         res.status(500).send({ error: "Internal Server Error" });

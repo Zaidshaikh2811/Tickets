@@ -16,10 +16,16 @@ spec:
     spec:
       containers:
         - name: auth
-          image: zaidshaikh2811/auth
+          image: YOUR_USERNAME/auth
           imagePullPolicy: Never
           ports:
             - containerPort: 3000
+          env:
+            - name: JWT_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: jwt-secret
+                  key: JWT_KEY  
 
 ---
 

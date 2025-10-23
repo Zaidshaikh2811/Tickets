@@ -3,6 +3,11 @@ import mongoose from 'mongoose';
 const mongoURI = process.env.MONGO_URI || 'mongodb://auth-mongo-srv:27017/authdb';
 
 export const connectToDatabase = async () => {
+
+    if (!process.env.JWT_KEY) {
+        throw new Error('JWT_KEY must be defined in environment variables');
+    }
+
     try {
         await mongoose.connect(mongoURI);
         console.log('MongoDB connected successfully');
