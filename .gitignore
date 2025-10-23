@@ -1,0 +1,69 @@
+# Node / TypeScript
+node_modules/
+dist/
+build/
+coverage/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# TypeScript
+*.tsbuildinfo
+
+# Env files
+.env
+.env.*
+
+# Docker
+**/Dockerfile
+**/.dockerignore
+
+# Logs
+*.log
+logs/
+logs/**
+
+# OS files
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+.DS_Store
+.AppleDouble
+Icon
+._*
+
+# IDEs and editors
+.vscode/
+*.code-workspace
+.idea/
+*.sublime-workspace
+*.sublime-project
+
+# Mac
+.Spotlight-V100
+.Trashes
+
+# Windows
+ehthumbs.db
+Icon?
+
+# JetBrains
+.idea/
+*.iml
+
+# Misc
+*.tgz
+*.zip
+
+# pnpm
+node_modules/.pnpm
+
+# VS Code settings and history
+.vscode/
+.history/
+
+# Optional npm cache
+.npm/
+
