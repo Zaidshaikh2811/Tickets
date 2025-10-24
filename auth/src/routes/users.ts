@@ -1,5 +1,5 @@
 import { Router, Request, Response } from "express";
-import { getCurrentUser, signup, signin } from "../controllers/userController";
+import { getCurrentUser, signup, signin, signOut } from "../controllers/userController";
 import { body } from "express-validator";
 import { validateRequest } from "../middleware/validateRequest";
 
@@ -26,5 +26,7 @@ router.post("/signin", [
     validateRequest,
 ], signin);
 
+
+router.post("/signout", signOut);
 
 export default router;

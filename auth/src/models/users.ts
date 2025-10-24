@@ -30,12 +30,13 @@ const userSchema = new mongoose.Schema<UserDoc>({
 }, {
     toJSON: {
         transform(doc, ret) {
-            ret.id = ret._id;
-            delete ret._id;
-            delete ret.__v;
-            delete ret.password;
-            delete ret.createdAt;
-            delete ret.updatedAt;
+            const r: any = ret;
+            r.id = r._id;
+            delete r._id;
+            delete r.__v;
+            delete r.password;
+            delete r.createdAt;
+            delete r.updatedAt;
         }
     }
 });

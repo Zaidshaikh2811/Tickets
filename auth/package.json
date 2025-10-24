@@ -6,8 +6,17 @@
   "scripts": {
     "start": "tsx src/index.ts",
     "dev": "tsx watch src/index.ts",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+     "test": "jest --watchAll --no-cache"
   },
+  "jest": {
+  "preset": "ts-jest",
+  "testEnvironment": "node",
+  "setupFilesAfterEnv": [
+    "./src/test/setup.ts"
+  ],
+  "roots": ["./src"]
+},
   "keywords": [],
   "author": "",
   "license": "ISC",
@@ -21,13 +30,19 @@
     "express": "^5.1.0",
     "express-validator": "^7.2.1",
     "jsonwebtoken": "^9.0.2",
+    "mongodb-memory-server": "^10.2.3",
     "mongoose": "^8.19.2",
     "nodemon": "^3.1.10"
   },
   "devDependencies": {
     "@types/body-parser": "^1.19.5",
+    "@types/jest": "^30.0.0",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^24.9.1",
+    "@types/supertest": "^6.0.3",
+    "jest": "^30.2.0",
+    "supertest": "^7.1.4",
+    "ts-jest": "^29.4.5",
     "tsx": "^4.7.0",
     "typescript": "^5.9.3"
   }
