@@ -18,7 +18,7 @@ export default function Home() {
           Get Started
         </Link>
         <Link
-          href="/signin"
+          href="/auth/signin"
           className="px-6 py-3 border border-indigo-600 text-indigo-600 rounded-lg hover:bg-indigo-50 transition"
         >
           Sign In

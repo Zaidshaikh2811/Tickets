@@ -1,15 +1,32 @@
 import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(req: NextRequest) {
-    const body = await req.json();
+    try {
+        const body = await req.json();
 
-    // call Node.js API in cluster
-    const apiRes = await fetch("http://auth-srv:3000/api/users/signup", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-    });
+        const apiRes = await fetch("http://auth-srv:3000/api/users/signup", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(body),
+            cache: "no-store",
+        });
 
-    const data = await apiRes.json();
-    return NextResponse.json(data, { status: apiRes.status });
+        const data = await apiRes.json();
+
+        // Forward response including cookies
+        const response = NextResponse.json(data, { status: apiRes.status });
+
+        // Copy cookies from auth service
+        const setCookie = apiRes.headers.get("set-cookie");
+        if (setCookie) {
+            response.headers.set("set-cookie", setCookie);
+        }
+
+        return response;
+    } catch (error) {
+        return NextResponse.json(
+            { message: "Internal server error" },
+            { status: 500 }
+        );
+    }
 }
