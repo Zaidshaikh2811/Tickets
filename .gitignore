@@ -67,3 +67,8 @@ node_modules/.pnpm
 
 # Optional npm cache
 .npm/
+
+auth/node_modules/*
+client/node_modules/*
+client/.next/*
+next/*
