@@ -14,11 +14,9 @@ const app = Express();
 app.set("trust proxy", true);
 app.use(bodyParser.json());
 app.use(cookieSession({
-    name: "session",
-    keys: [process.env.COOKIE_KEY_1 || "default_key_1", process.env.COOKIE_KEY_2 || "default_key_2"],
-    maxAge: 24 * 60 * 60 * 1000, // 24 hours
-    secure: process.env.NODE_ENV === "production",
-    httpOnly: true,
+    signed: false,
+    secure: false,
+    sameSite: "lax",
 }));
 
 app.use((req, res, next) => {

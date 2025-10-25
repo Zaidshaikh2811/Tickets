@@ -8,6 +8,9 @@ import { asyncHandler } from "../middleware/errorHandler";
 export const getCurrentUser = async (req: Request, res: Response) => {
     try {
         const token = req.session?.jwt;
+
+
+
         if (!token) return res.status(401).json({ error: "Not authenticated" });
 
         let payload: any;
@@ -20,6 +23,9 @@ export const getCurrentUser = async (req: Request, res: Response) => {
 
         const user = await User.findById(payload.id);
         if (!user) throw new CustomError("User not found", 404);
+
+
+
 
         res.status(200).json({ user: { name: user.name, email: user.email } });
     } catch (err) {
