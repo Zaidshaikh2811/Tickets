@@ -1,7 +1,7 @@
 import { Router, Request, Response } from "express";
 import { getCurrentUser, signup, signin, signOut } from "../controllers/userController";
 import { body } from "express-validator";
-import { validateRequest } from "../middleware/validateRequest";
+import { validateRequest } from "@zspersonal/common";
 
 const router = Router();
 

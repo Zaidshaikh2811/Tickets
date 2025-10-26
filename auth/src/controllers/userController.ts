@@ -1,8 +1,8 @@
 import { Request, Response } from "express";
 import { User } from "../models/users";
 import jwt from "jsonwebtoken";
-import { CustomError } from "../errors/CustomError";
-import { asyncHandler } from "../middleware/errorHandler";
+import { CustomError } from "@zspersonal/common";
+import { asyncHandler } from "@zspersonal/common";
 
 
 export const getCurrentUser = async (req: Request, res: Response) => {

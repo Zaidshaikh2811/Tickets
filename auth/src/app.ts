@@ -3,8 +3,8 @@ import bodyParser from "body-parser";
 import usersRouter from "./routes/users";
 
 import cookieSession from "cookie-session";
-import { CustomError } from "./errors/CustomError";
-import { errorHandler } from "./middleware/errorHandler";
+import { CustomError, errorHandler } from "@zspersonal/common";
+
 
 
 
