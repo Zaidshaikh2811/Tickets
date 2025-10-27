@@ -1,9 +1,9 @@
-import Express from "express";
+import Express, { RequestHandler } from "express";
 import bodyParser from "body-parser";
 
 import cookieSession from "cookie-session";
-import { CustomError, errorHandler } from "@zspersonal/common";
-
+import { CustomError, errorHandler, getCurrentUser } from "@zspersonal/common";
+import { createTicketRouter } from "./routes/new";
 
 
 
@@ -23,6 +23,9 @@ app.use((req, res, next) => {
     next();
 });
 
+app.use(getCurrentUser as RequestHandler);
+
+app.use("/api/tickets", createTicketRouter);
 
 
 
