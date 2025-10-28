@@ -1,7 +1,7 @@
 import express, { Request, Response } from "express";
 import { body } from "express-validator";
 import { validateRequest, requireAuth } from "@zspersonal/common";
-import { addTicket, deleteTicket, getTickets, updateTicket } from "../controller/tickets";
+import { addTicket, deleteTicket, getTickets, updateTicket, getParticularTicket } from "../controller/tickets";
 
 
 const router = express.Router();
@@ -20,6 +20,7 @@ router.post("/", requireAuth, [
 
 
 router.get("/", getTickets);
+router.get("/:id", getParticularTicket)
 
 router.put("/:id", updateTicket);
 

@@ -1,5 +1,7 @@
 import request from "supertest";
 import { app } from "../../app";
+import { Ticket } from "../../models/tickets";
+
 
 
 it("returns a 200 on successful ticket creation", async () => {
