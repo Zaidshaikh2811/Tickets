@@ -83,11 +83,11 @@ export const deleteTicket = async (req: Request, res: Response) => {
     }
 }
 
-export const getParticularTicket = (req: Request, res: Response) => {
+export const getParticularTicket = async (req: Request, res: Response) => {
     try {
         const ticketId = req.params.id;
         // Simulate fetching ticket from database
-        const ticket = Ticket.findById(ticketId);
+        const ticket = await Ticket.findById(ticketId);
         if (!ticket) {
             throw new CustomError("Ticket not found", 404);
         }
