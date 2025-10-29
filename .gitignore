@@ -73,3 +73,5 @@ client/node_modules/*
 client/.next/*
 next/*
 common/*
+
+infra/k8s/secret.yaml
