@@ -6,7 +6,8 @@
   "scripts": {
   
   "publisher": "node --loader ts-node/esm src/publisher.ts",
-  "listener": "node --loader ts-node/esm src/listener.ts"
+  "listener": "node --loader ts-node/esm src/listener.ts",
+  "listener-sec": "node --loader ts-node/esm src/listener-two.ts"
   },
   "keywords": [],
   "author": "",
