@@ -151,29 +151,3 @@ Contributions are welcome. Suggested workflow:
 2. Make changes and run the relevant service locally.
 3. Add tests if applicable and run them.
 4. Open a pull request with a clear description and link to any issue.
-
-Coding style:
-
-- Use TypeScript strict mode where possible.
-- Keep functions small and pure where feasible.
-- Document public functions and types in `common/`.
-
-## Troubleshooting
-
-- If TypeScript or ts-node-dev complains about ESM vs CJS ("Must use import to load ES Module"), check the `package.json` `type` field and `tsconfig.json` `module` setting. Either set `type: "module"` and use ESM imports or switch to CommonJS (`type: "commonjs"`) and `require()`/`module.exports` where appropriate. For development using `ts-node-dev` on Windows, `type: "commonjs"` is usually more straightforward.
-- If Docker images fail to build due to native modules, ensure build tools are installed in the image (e.g., `python3`, `make`, `g++`) in the build stage.
-- Port conflicts: ensure no other process occupies the same ports (3000, 4222, etc.) or change service `PORT` env var.
-
-## License
-
-This repository does not include a license by default. Add a `LICENSE` file (MIT, Apache-2.0, etc.) to clarify the terms under which the code is shared.
-
----
-
-If you'd like, I can:
-
-- Generate a `README` per-service (e.g., `auth/README.md`) with exact environment variables and npm scripts pulled from `package.json`.
-- Add a `docker-compose.yml` into `infra/` that wires `nats`, `auth`, and `client` together for easy local startup.
-- Add `.env.example` files for `auth/` and `nats/`.
-
-Tell me which of the above you'd like next and I will implement it.
