@@ -1,24 +1,18 @@
 
-import nats, { Message } from "node-nats-streaming";
+import nats from "node-nats-streaming";
+import { TestListener } from "./events/ticket-created-listener";
 console.clear();
 
 const stan = nats.connect("ticketing", "123", {
     url: "http://localhost:4222",
 });
-const options = stan.subscriptionOptions().setDeliverAllAvailable().setManualAckMode(true).setAckWait(5 * 1000);
 
 
 stan.on("connect", async () => {
     console.log("Publisher connected to NATS");
 
-    const subscription = stan.subscribe("test:subject", "order-service-queue-group", options);
-
-    subscription.on("message", (msg: Message) => {
-        const data = msg.getData();
-        console.log(`📩 Received message [${msg.getSequence()}]: ${data}`);
-        msg.ack();
-    });
-
+    const testListener = new TestListener(stan);
+    testListener.listen();
 
     stan.on("close", () => {
         console.log("NATS connection closed");
@@ -28,3 +22,6 @@ stan.on("connect", async () => {
 
 process.on("SIGINT", () => stan.close());
 process.on("SIGTERM", () => stan.close());
+
+
+
