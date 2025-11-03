@@ -2,6 +2,7 @@
 import { Request, Response } from "express";
 import { Ticket } from "../models/tickets"
 import { CustomError } from "@zspersonal/common"
+import { TicketCreatedPublisher } from "../events/publisher/ticket-created-publisher";
 
 declare global {
     namespace Express {
@@ -24,6 +25,14 @@ export const addTicket = (req: Request, res: Response) => {
         }
         const ticket = Ticket.build({ title, price, userId });
         ticket.save();
+
+        // new TicketCreatedPublisher(client).publish({
+        //     id: ticket.id,
+        //     title: ticket.title,
+        //     price: ticket.price,
+        //     userId: ticket.userId,
+        // });
+
         res.status(201).json(ticket);
 
     } catch (err) {
