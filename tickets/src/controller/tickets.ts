@@ -3,6 +3,8 @@ import { Request, Response } from "express";
 import { Ticket } from "../models/tickets"
 import { CustomError } from "@zspersonal/common"
 import { TicketCreatedPublisher } from "../events/publisher/ticket-created-publisher";
+import { natsWrapper } from "../nats-wrapper";
+import { TicketUpdatedPublisher } from "../events/publisher/ticker-updated-publihser";
 
 declare global {
     namespace Express {
@@ -26,12 +28,12 @@ export const addTicket = (req: Request, res: Response) => {
         const ticket = Ticket.build({ title, price, userId });
         ticket.save();
 
-        // new TicketCreatedPublisher(client).publish({
-        //     id: ticket.id,
-        //     title: ticket.title,
-        //     price: ticket.price,
-        //     userId: ticket.userId,
-        // });
+        new TicketCreatedPublisher(natsWrapper.client).publish({
+            id: ticket.id,
+            title: ticket.title,
+            price: ticket.price,
+            userId: ticket.userId,
+        });
 
         res.status(201).json(ticket);
 
@@ -64,6 +66,13 @@ export const updateTicket = async (req: Request, res: Response) => {
         if (!updatedTicket) {
             throw new CustomError("Ticket not found", 404);
         }
+
+        new TicketUpdatedPublisher(natsWrapper.client).publish({
+            id: updatedTicket.id,
+            title: updatedTicket.title,
+            price: updatedTicket.price,
+            userId: updatedTicket.userId,
+        });
 
         res.status(200).json({ message: "Ticket updated successfully", data: updatedTicket });
 

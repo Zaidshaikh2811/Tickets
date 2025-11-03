@@ -8,12 +8,24 @@ const NATS_URL = process.env.NATS_URL! || 'nats://nats-service:4222';
 
 export const connectToDatabase = async () => {
 
-    console.log(process.env.JWT_KEY);
 
 
     if (!process.env.JWT_KEY) {
         throw new Error('JWT_KEY must be defined in environment variables');
     }
+    if (!process.env.MONGO_URI) {
+        throw new Error('MONGO_URI must be defined in environment variables');
+    }
+    if (!process.env.NATS_CLIENT_ID) {
+        throw new Error('NATS_CLIENT_ID must be defined in environment variables');
+    }
+    if (!process.env.NATS_URL) {
+        throw new Error('NATS_URL must be defined in environment variables');
+    }
+    if (!process.env.NATS_CLUSTER_ID) {
+        throw new Error('NATS_CLUSTER_ID must be defined in environment variables');
+    }
+
 
     try {
         await natsWrapper.connect(
@@ -21,6 +33,14 @@ export const connectToDatabase = async () => {
             NATS_CLIENT_ID,
             NATS_URL
         );
+
+        natsWrapper.client.on("close", () => {
+            console.log("NATS connection closed");
+        });
+
+        process.on("SIGINT", () => natsWrapper.client.close());
+        process.on("SIGTERM", () => natsWrapper.client.close());
+
         console.log('NATS connected successfully');
         await mongoose.connect(mongoURI);
         console.log('MongoDB connected successfully');

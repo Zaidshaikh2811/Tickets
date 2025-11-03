@@ -6,6 +6,8 @@ import { CustomError } from "@zspersonal/common";
 // Mock the Ticket model
 jest.mock("../../models/tickets");
 
+jest.mock("../../nats-wrapper");
+
 const mockResponse = () => {
     const res = {} as Response;
     res.status = jest.fn().mockReturnValue(res);
