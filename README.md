@@ -1,153 +1,154 @@
-# Tickets — Microservices Example
+# TicketForge (Tickets) — Microservices Example
 
-A small microservices sample project for building a ticketing platform. This repository contains multiple independently deployable services (authentication, NATS examples, client, infra and shared/common utilities). It's organized for local development, containerized builds, and simple CI/CD workflows.
+This repository is a compact microservices playground for a ticketing/event platform. It contains small, focused services that are easy to run locally, containerize, and extend.
 
-This README documents the overall project layout, how to run services locally, how to build Docker images, required environment variables, and where to find service-specific README files.
-
----
-
+Key goals:
+ - Demonstrate a minimal event-driven microservices layout (auth, event pub/sub, client).
+ - Provide clear local and containerized run instructions.
+ - Keep services small and easy to reason about for experimentation and learning.
 ## Table of contents
 
-- Project overview
-- Services in this repo
-- Prerequisites
-- Quick start (run locally)
-- Run with Docker
-- Environment variables (by service)
-- Development notes and conventions
-- Project structure
-- Contributing
-- Troubleshooting
-- License
-
----
-
+ - Services
+ - Prerequisites
+ - Quick start (local)
+ - Run with Docker (single service)
+ - Run everything with Docker Compose (example)
+ - Environment variables (by service)
+ - Development notes
+ - Project structure
+ - Contributing
 ## Project overview
 
 This repository is a small microservices playground for a Tickets platform. Its goals are:
 
-- Demonstrate small focused services (auth, event publisher/subscriber via NATS, a client app).
-- Provide a reproducible local development experience (TypeScript, Docker, small infra folder for manifests).
-- Showcase patterns: containerization, TypeScript compile targets, clean repo layouts.
+ - Demonstrate small focused services (auth, event bus (NATS), and client).
+ - Provide a reproducible local development experience (TypeScript, Docker, small infra folder for manifests).
+ - Showcase patterns: containerization, TypeScript compile targets, clean repo layouts.
 
 Use this repository as a learning / prototype base; treat it as a starting point and extend as needed.
+## Services
 
-## Services in this repo
+This repo groups small services at the top-level. Typical folders you will see:
 
-- `auth/` — Authentication microservice (Node.js + TypeScript, Express). Handles signup, signin, current user and health endpoints. Containerized via Dockerfile in the folder.
-- `nats/` — Small examples that publish and subscribe to events using NATS (node-nats-streaming). Useful for testing event flows.
-- `client/` — Frontend application (React / Vite / Next or other) — static frontend consuming the API.
-- `common/` — Shared types, utilities, and code used across services.
-- `infra/` — Infrastructure as code (optional) — docker-compose, k8s manifests or bicep/terraform helpers you may add here.
+ - `auth/` — authentication microservice (Node.js + TypeScript, Express). Exposes signup, signin, current user, and health endpoints.
+ - `nats/` — NATS publisher/subscriber examples (useful to exercise event flows).
+ - `client/` — frontend app (React / Vite / Next, depending on what you scaffolded).
+ - `common/` — shared types and helper code.
+ - `infra/` — optional infra manifests (k8s, docker-compose) and secrets templates.
 
-Each service may have its own README with service-specific commands and environment variables. Look inside each folder for details.
-
+Each service should contain its own `package.json`, `tsconfig.json` (if TypeScript), and `Dockerfile` when relevant. Prefer reading the service folder for exact scripts and environment variables.
 ## Prerequisites
 
-- Node.js (LTS recommended, e.g. 18 or 20)
-- npm (or yarn/pnpm if you prefer)
-- Docker & Docker Compose (optional — for running services in containers)
-- Git (for cloning and managing the repo)
+ - Node.js (LTS recommended, e.g. 18 or 20)
+ - npm (or yarn/pnpm)
+ - Docker & Docker Compose (optional — for running containers)
+ - Git
 
-If you use Windows PowerShell, commands in this README assume PowerShell syntax. Linux/macOS shells use similar commands (replace `;` chained commands with `&&` if desired).
+Notes: Examples below use PowerShell syntax where appropriate (you're on Windows). On macOS/Linux replace `;` with `&&` when chaining commands.
+## Quick start — run locally (recommended for development)
 
-## Quick start — Run services locally
-
-Basic recommended flow:
-
-1. Install dependencies for a service. For example, to run the auth service:
-
-```powershell
-cd auth
-npm install
-npm run build   # if present, builds TypeScript to dist
-npm run dev     # or npm start, see service package.json
-```
-
-2. Start a NATS server for pub/sub examples (if you have Docker):
+1) Start NATS (for event examples)
 
 ```powershell
 docker run --rm -p 4222:4222 -p 8222:8222 nats:2.10.0
 ```
 
-3. In another terminal, run the NATS publisher or subscriber (from the `nats/` folder):
+2) Run the auth service
+
+```powershell
+cd auth
+npm install
+npm run dev    # or npm start / npm run build && node dist/index.js depending on the service
+```
+
+3) Run the nats examples
 
 ```powershell
 cd nats
 npm install
-npm run publish    # runs publisher example
-npm run subscribe  # runs subscriber example
+npm run publish
+npm run subscribe
 ```
 
-4. Open the client (if present):
+4) Run the client
 
 ```powershell
 cd client
 npm install
 npm run dev
-# open http://localhost:5173 or the port printed by your dev server
+# open the dev URL printed by the client
 ```
 
-Adjust ports and variables per service's README or package.json scripts.
+Check each service's `package.json` for exact script names (`dev`, `start`, `build`) — they may differ.
+## Run a single service with Docker
 
-## Run the project with Docker
-
-Each service has a `Dockerfile` (for example `auth/Dockerfile`). Build and run a service image like:
+Build and run a service (example: `auth`):
 
 ```powershell
 cd auth
-docker build -t tickets-auth:local .
-docker run --rm -p 3000:3000 --name tickets-auth -e NODE_ENV=production tickets-auth:local
+docker build -t ticketforge-auth:local .
+docker run --rm -p 3000:3000 --name ticketforge-auth -e NODE_ENV=production ticketforge-auth:local
 ```
 
-To run several services together you can add a `docker-compose.yml` in `infra/` or the repository root. Example `infra/docker-compose.yml` (not included by default) should define services for `nats`, `auth` and `client` and wire ports and environment variables.
+You can place a `docker-compose.yml` under `infra/` to start multiple services together (example below).
+## Environment variables (examples)
 
-## Environment variables (by service)
+Create a `.env` or `.env.local` per-service for local development and never commit secrets. Here are suggested variables used by many setups in this repo:
 
-Below are the typical variables each service may expect. Check each service's code or `package.json` for exact names.
+ - `auth/` example (`auth/.env`)
 
-- Auth service (`auth/`)
-  - `PORT` — port to listen on (default: 3000)
-  - `JWT_KEY` — secret used to sign JWTs
-  - `MONGO_URI` — (if the service uses MongoDB)
-  - `NATS_URL` / `NATS_CLUSTER_ID` / `NATS_CLIENT_ID` — for publishing/subscribing events
+```
+PORT=3000
+JWT_KEY=some-super-secret
+MONGO_URI=mongodb://localhost:27017/tickets
+NATS_URL=http://localhost:4222
+NATS_CLUSTER_ID=test-cluster
+NATS_CLIENT_ID=auth-service
+```
 
-- NATS examples (`nats/`)
-  - `NATS_URL` — e.g. `http://localhost:4222`
+ - `nats/` example (`nats/.env`)
 
-- Client (`client/`)
-  - `VITE_API_URL` or `REACT_APP_API_URL` — URL for the backend API
+```
+NATS_URL=http://localhost:4222
+```
 
-Create a `.env` or `.env.local` in each service folder for local development and never commit them. A sample `.env.example` file checked in is recommended so other developers know what keys are needed.
+ - `client/` example (`client/.env`)
 
+```
+VITE_API_URL=http://localhost:3000
+```
+
+Add `.env.example` files to each service folder with keys only (no secrets) so contributors know what to provide.
 ## Development notes and conventions
 
-- TypeScript is used throughout the services. Each service should include a `tsconfig.json` tuned for that service. Common types and interfaces can live in `common/`.
-- Prefer small, single-responsibility services; keep surface area minimal.
-- Follow the repository naming style: package folders at root, service-local package.json and Dockerfile.
-
+ - Use TypeScript strict mode when possible. Keep `common/` for shared types.
+ - Keep services small and independent. Each service should ideally run independently (its own `package.json`, `tsconfig.json`, and `Dockerfile`).
+ - Prefer semantic commits and low-risk pull requests. Add tests where feasible.
 ## Project structure
-
-Top-level layout (typical):
 
 ```
 .
 ├─ auth/           # auth microservice (Node + TS)
 ├─ nats/           # nats publisher / subscriber examples
 ├─ client/         # frontend app
-├─ common/         # shared types/libs
-├─ infra/          # deployment manifests / docker-compose
+├─ common/         # shared utilities and types
+├─ infra/          # infra manifests (k8s, docker-compose)
 ├─ .gitignore
 └─ README.md
 ```
 
-If you add new services, follow the same pattern: service folder with `package.json`, `src/`, `tsconfig.json`, and `Dockerfile`.
-
+Add new services using this pattern so other contributors can follow the same conventions.
 ## Contributing
 
-Contributions are welcome. Suggested workflow:
+Thanks for wanting to help! Suggested workflow:
 
-1. Fork the repository and create a topic branch: `git checkout -b feat/your-feature`
-2. Make changes and run the relevant service locally.
-3. Add tests if applicable and run them.
-4. Open a pull request with a clear description and link to any issue.
+1. Fork the repo and create a branch (`git checkout -b feat/your-feature`).
+2. Run and test the relevant service locally.
+3. Add tests and update `README` or `ENV` examples as needed.
+4. Open a PR with a clear description and testing notes.
+
+Coding conventions
+
+ - Prefer descriptive commits and small PRs.
+ - Keep types and shared interfaces in `common/`.
+ - Add `*.example` env files when introducing new environment variables.
