@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { addTicket, getTickets, updateTicket, deleteTicket, getParticularTicket } from "../../controller/tickets";
+import { addTicket, getTickets, updateTicket, deleteTicket, getParticularTicket } from "../../controller/ticketsController";
 import { Ticket } from "../../models/tickets";
 import { CustomError } from "@zspersonal/common";
 

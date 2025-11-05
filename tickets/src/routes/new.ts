@@ -1,7 +1,7 @@
 import express, { Request, Response } from "express";
 import { body } from "express-validator";
 import { validateRequest, requireAuth } from "@zspersonal/common";
-import { addTicket, deleteTicket, getTickets, updateTicket, getParticularTicket } from "../controller/tickets";
+import { addTicket, deleteTicket, getTickets, updateTicket, getParticularTicket } from "../controller/ticketsController";
 
 
 const router = express.Router();
