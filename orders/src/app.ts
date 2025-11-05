@@ -44,7 +44,7 @@ app.use((req, res, next) => {
     next(new CustomError(`Route ${req.originalUrl} not found`, 404));
 });
 
-// Global error handler - must be last
+
 app.use(errorHandler);
 
 export { app };

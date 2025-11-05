@@ -1,7 +1,16 @@
 import { Router } from 'express';
-import { getOrders, createOrder, getOrderById, cancelOrder, payForOrder, updateOrder } from '../controller/ordersController';
+import {
+    getOrders,
+    createOrder,
+    getOrderById,
+    cancelOrder,
+    payForOrder,
+    updateOrder
+} from '../controller/ordersController';
+
 import { validateRequest, requireAuth } from "@zspersonal/common";
-import { body } from 'express-validator';
+import { body, param } from 'express-validator';
+import mongoose from 'mongoose';
 
 const router = Router();
 
@@ -9,46 +18,75 @@ router.get('/health', (req, res) => {
     res.status(200).send({ status: 'Orders service is healthy' });
 });
 
+router.get(
+    "/",
+    requireAuth,
+    getOrders
+);
 
-router.get("/",
+
+router.post(
+    "/:ticketId",
+    [
+        param("ticketId")
+            .custom(id => mongoose.Types.ObjectId.isValid(id))
+            .withMessage("TicketId must be a valid Mongo ID")
+    ],
     validateRequest,
     requireAuth,
-    [body("status").optional().isIn(["created", "cancelled", "completed", "awaiting:payment"]).
-        withMessage("Status must be one of created, cancelled, completed, awaiting:payment")],
-    getOrders);
+    createOrder
+);
 
-router.post("/",
+
+router.get(
+    "/:orderId",
+    [
+        param("orderId")
+            .isMongoId()
+            .withMessage("OrderId must be a valid Mongo ID")
+    ],
     validateRequest,
     requireAuth,
-    [body("ticketId").not().isEmpty().withMessage("TicketId must be provided")],
-    createOrder);
+    getOrderById
+);
 
-router.get("/:orderId",
+
+router.delete(
+    "/:orderId",
+    [
+        param("orderId")
+            .isMongoId()
+            .withMessage("OrderId must be a valid Mongo ID")
+    ],
     validateRequest,
     requireAuth,
-    [body("orderId").isMongoId().withMessage("OrderId must be a valid Mongo ID")],
-    getOrderById);
+    cancelOrder
+);
 
-router.delete("/:orderId",
+
+router.post(
+    "/:orderId/pay",
+    [
+        param("orderId")
+            .isMongoId()
+    ],
     validateRequest,
     requireAuth,
-    [body("orderId").isMongoId().withMessage("OrderId must be a valid Mongo ID")],
-    cancelOrder);
+    payForOrder
+);
 
-router.post("/:orderId/pay",
+
+router.put(
+    "/:orderId",
+    [
+        param("orderId").isMongoId(),
+        body("status")
+            .isIn(["created", "cancelled", "completed", "awaiting:payment"])
+            .withMessage("Status must be one of created, cancelled, completed, awaiting:payment")
+    ],
     validateRequest,
     requireAuth,
-    [body("orderId").isMongoId().withMessage("OrderId must be a valid Mongo ID")],
-    payForOrder);
-
-
-router.put("/:orderId",
-    validateRequest,
-    requireAuth,
-    [body("orderId").isMongoId().withMessage("OrderId must be a valid Mongo ID"),
-    body("status").isIn(["created", "cancelled", "completed", "awaiting:payment"]).
-        withMessage("Status must be one of created, cancelled, completed, awaiting:payment")],
-    updateOrder)
-
+    updateOrder
+);
 
 export { router as orderRouter };
