@@ -48,6 +48,8 @@ const orderSchema = new mongoose.Schema<OrderDoc>({
     }
 }, {
     timestamps: true,
+    optimisticConcurrency: true,
+    versionKey: "version",
     toJSON: {
         transform(doc, ret) {
             ret.id = ret._id;

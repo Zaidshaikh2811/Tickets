@@ -49,7 +49,6 @@ export const createOrder = async (req: Request, res: Response) => {
     const expiration = new Date();
     expiration.setMinutes(expiration.getMinutes() + 15);
 
-
     const order = Order.build({
         userId: new mongoose.Types.ObjectId(req.currentUser!.id) as unknown as mongoose.Schema.Types.ObjectId,
         status: OrderStatus.Created,
@@ -70,10 +69,7 @@ export const createOrder = async (req: Request, res: Response) => {
         version: order.version
     });
 
-
-
     res.status(201).send({ success: true, order });
-
 
 }
 
@@ -115,7 +111,7 @@ export const cancelOrder = async (req: Request, res: Response) => {
         version: order.version
     });
 
-    res.status(204).send();
+    res.status(204).send({ success: true });
 
 
 }
@@ -145,6 +141,6 @@ export const updateOrder = async (req: Request, res: Response) => {
     order.status = status;
     await order.save();
 
-    res.status(200).send({ order: { id: orderId, status } });
+    res.status(200).send({ success: true, order: { id: orderId, status } });
 
 }

@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import { natsWrapper } from '../nats-wrapper';
 
 
 const config = {
@@ -44,7 +45,7 @@ const connectToDatabase = async (): Promise<void> => {
         });
 
 
-        // gracefulShutdown();
+        gracefulShutdown();
 
     } catch (error) {
         console.error('❌ MongoDB initial connection failed:', error);
@@ -53,27 +54,27 @@ const connectToDatabase = async (): Promise<void> => {
     }
 };
 
-// const gracefulShutdown = async () => {
-//     console.log('\n Initiating graceful shutdown...');
+const gracefulShutdown = async () => {
+    console.log('\n Initiating graceful shutdown...');
 
-//     try {
+    try {
 
-//         if (natsWrapper.client) {
-//             natsWrapper.client.close();
-//             console.log('  NATS connection closed.');
-//         }
-
-
-//         await mongoose.connection.close();
-//         console.log('  MongoDB connection closed.');
+        if (natsWrapper.client) {
+            natsWrapper.client.close();
+            console.log('  NATS connection closed.');
+        }
 
 
-//         console.log(' Graceful shutdown complete. Exiting...');
-//         process.exit(0);
-//     } catch (error) {
-//         console.error(' Error during graceful shutdown:', error);
-//         process.exit(1);
-//     }
-// };
+        await mongoose.connection.close();
+        console.log('  MongoDB connection closed.');
+
+
+        console.log(' Graceful shutdown complete. Exiting...');
+        process.exit(0);
+    } catch (error) {
+        console.error(' Error during graceful shutdown:', error);
+        process.exit(1);
+    }
+};
 
 export { connectToDatabase, config };

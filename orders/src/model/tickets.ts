@@ -32,6 +32,8 @@ const ticketSchema = new mongoose.Schema<TicketDoc>({
         min: 0
     }
 }, {
+    optimisticConcurrency: true,
+    versionKey: "version",
     toJSON: {
         transform(doc, ret) {
             ret.id = ret._id;

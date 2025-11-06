@@ -10,6 +10,6 @@
     "outDir": "./dist",
     "rootDir": "./src"
   },
-  "include": ["src/**/*"],
+  "include": ["src/**/*", "../tickets/src/workers"],
   "exclude": ["node_modules"]
 }
