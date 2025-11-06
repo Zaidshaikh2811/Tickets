@@ -20,7 +20,8 @@ router.post("/", requireAuth, [
 
 
 router.get("/", getTickets);
-router.get("/:id",
+
+router.get("/:ticketId ",
     [
         param("id").isMongoId().withMessage("Invalid ticket ID"),
     ],
@@ -28,7 +29,7 @@ router.get("/:id",
     requireAuth,
     getParticularTicket)
 
-router.put("/:id", [
+router.put("/:ticketId ", [
     param("id").isMongoId().withMessage("Invalid ticket ID"),
     body("title")
         .not().isEmpty().withMessage("Title is required"),
@@ -38,7 +39,7 @@ router.put("/:id", [
     requireAuth
 ], updateTicket);
 
-router.delete("/:id", [
+router.delete("/:ticketId ", [
     param("id").isMongoId().withMessage("Invalid ticket ID"),
     validateRequest,
     requireAuth

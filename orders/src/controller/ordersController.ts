@@ -1,9 +1,15 @@
 
 import { Request, Response } from 'express';
-import { CustomError, OrderStatus } from "@zspersonal/common"
+import { CustomError, OrderStatus, ensureValidMongoId } from "@zspersonal/common"
 import mongoose from 'mongoose';
 import { Ticket } from '../model/tickets';
 import { Order } from '../model/orders';
+import { OrderCreatedPublisher } from '../events/order-created-publisher';
+import { natsWrapper } from '../nats-wrapper';
+import { OrderCancelledPublisher } from '../events/order-cancelled-publisher';
+
+
+
 
 declare global {
     namespace Express {
@@ -14,11 +20,6 @@ declare global {
 }
 
 
-const ensureValidMongoId = (id: string) => {
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-        throw new CustomError("Invalid ID format", 400);
-    }
-};
 
 export const getOrders = async (req: Request, res: Response) => {
     const userId = req.currentUser?.id;
@@ -57,6 +58,17 @@ export const createOrder = async (req: Request, res: Response) => {
     });
     await order.save();
 
+    new OrderCreatedPublisher(natsWrapper.client).publish({
+        id: order.id.toString(),
+        status: order.status,
+        userId: order.userId.toString(),
+        expiresAt: order.expiresAt.toISOString(),
+        ticket: {
+            id: ticket.id.toString(),
+            price: ticket.price
+        },
+        version: order.version
+    });
 
 
 
@@ -90,7 +102,18 @@ export const cancelOrder = async (req: Request, res: Response) => {
     }
     order.status = OrderStatus.Cancelled;
     await order.save();
-    console.log("Cancled Order");
+
+    new OrderCancelledPublisher(natsWrapper.client).publish({
+        id: order.id.toString(),
+        status: order.status,
+        userId: order.userId.toString(),
+        expiresAt: order.expiresAt.toISOString(),
+        ticket: {
+            id: order.ticket.toString(),
+            price: (order.ticket as any).price
+        },
+        version: order.version
+    });
 
     res.status(204).send();
 
@@ -102,8 +125,8 @@ export const payForOrder = (req: Request, res: Response) => {
     ensureValidMongoId(orderId);
     res.status(200).send({ success: true, order: { id: orderId }, status: 'Payment successful' });
 
-
 }
+
 export const updateOrder = async (req: Request, res: Response) => {
 
     const { orderId } = req.params;

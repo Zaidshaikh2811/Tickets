@@ -1,7 +1,7 @@
 
 import { Request, Response } from "express";
 import { Ticket } from "../models/tickets"
-import { CustomError } from "@zspersonal/common"
+import { CustomError, ensureValidMongoId } from "@zspersonal/common"
 import { TicketCreatedPublisher } from "../events/publisher/ticket-created-publisher";
 import { natsWrapper } from "../nats-wrapper";
 import { TicketUpdatedPublisher } from "../events/publisher/ticker-updated-publihser";
@@ -14,17 +14,24 @@ declare global {
     }
 }
 
+
+
 export const addTicket = (req: Request, res: Response) => {
 
 
     const { title, price } = req.body;
+    const userId = req.currentUser?.id;
+
+    if (!userId) {
+        throw new CustomError("User not authenticated", 401);
+    }
+
+    ensureValidMongoId(userId);
+
     if (!title || price === undefined) {
         throw new CustomError("Title and Price are required", 400);
     }
-    const userId = req.currentUser?.id;
-    if (!userId) {
-        throw new CustomError("Login Again", 401);
-    }
+
     const ticket = Ticket.build({ title, price, userId });
     ticket.save();
 
@@ -35,15 +42,13 @@ export const addTicket = (req: Request, res: Response) => {
         userId: ticket.userId,
     });
 
-    res.status(201).json(ticket);
-
-
+    res.status(201).json({ success: true, data: ticket });
 }
 
 export const getTickets = async (req: Request, res: Response) => {
     try {
-        const tickets = await Ticket.find().sort({ createdAt: -1 });
-        res.status(200).json({ count: tickets.length, data: tickets });
+        const tickets = await Ticket.find().sort({ createdAt: -1 }).lean();
+        res.status(200).json({ success: true, count: tickets.length, data: tickets });
     } catch (err) {
         throw new CustomError("Internal Server Error", 500);
 
@@ -51,28 +56,42 @@ export const getTickets = async (req: Request, res: Response) => {
 }
 
 
+
+
 export const updateTicket = async (req: Request, res: Response) => {
 
-    const { id } = req.params;
-    const updateData = req.body;
+    const { ticketId } = req.params;
+    const userId = req.currentUser?.id;
+    ensureValidMongoId(ticketId);
 
-    const updatedTicket = await Ticket.findByIdAndUpdate(id, updateData, {
-        new: true,
-        runValidators: true,
-    });
-
-    if (!updatedTicket) {
+    const existingTicket = await Ticket.findById(ticketId);
+    if (!existingTicket) {
         throw new CustomError("Ticket not found", 404);
     }
 
+    if (existingTicket.userId !== userId) {
+        throw new CustomError("Not authorized to update this ticket", 403);
+    }
+
+
+
+    const {
+        title, price
+    } = req.body;
+
+    if (title) existingTicket.title = title;
+    if (price !== undefined) existingTicket.price = price;
+
+    await existingTicket.save();
+
     new TicketUpdatedPublisher(natsWrapper.client).publish({
-        id: updatedTicket.id,
-        title: updatedTicket.title,
-        price: updatedTicket.price,
-        userId: updatedTicket.userId,
+        id: existingTicket.id,
+        title: existingTicket.title,
+        price: existingTicket.price,
+        userId: existingTicket.userId,
     });
 
-    res.status(200).json({ message: "Ticket updated successfully", data: updatedTicket });
+    res.status(200).json({ message: "Ticket updated successfully", data: existingTicket });
 
 
 
@@ -96,12 +115,15 @@ export const deleteTicket = async (req: Request, res: Response) => {
 export const getParticularTicket = async (req: Request, res: Response) => {
 
     const ticketId = req.params.id;
-    // Simulate fetching ticket from database
+
+
+    ensureValidMongoId(ticketId);
+
     const ticket = await Ticket.findById(ticketId);
     if (!ticket) {
         throw new CustomError("Ticket not found", 404);
     }
-    res.status(200).json(ticket);
+    res.status(200).json({ success: true, data: ticket });
 
 
 }
