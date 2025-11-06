@@ -13,9 +13,9 @@ const app = Express();
 
 
 app.set("trust proxy", true);
-app.use(helmet()); // Adds common security headers
-app.use(compression()); // Gzip responses
-app.use(json()); // Parses JSON body
+app.use(helmet());
+app.use(compression());
+app.use(json());
 
 app.use(cookieSession({
     signed: false,
@@ -24,7 +24,7 @@ app.use(cookieSession({
 }));
 
 if (process.env.NODE_ENV !== 'test') {
-    app.use(morgan('dev')); // Pretty logging for dev environments
+    app.use(morgan('dev'));
 }
 
 

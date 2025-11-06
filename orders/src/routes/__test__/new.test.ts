@@ -7,7 +7,7 @@ import { OrderStatus } from "@zspersonal/common";
 
 describe("Orders API", () => {
 
-    // ✅ GET /api/orders
+
     it("GET /api/orders returns empty orders list", async () => {
         const res = await request(app)
             .get("/api/orders")
@@ -18,7 +18,7 @@ describe("Orders API", () => {
         expect(Array.isArray(res.body.orders)).toBe(true);
     });
 
-    // // ✅ POST /api/orders/:ticketId  → creates new order
+
     it("POST /api/orders/:ticketId creates an order", async () => {
         const ticket = Ticket.build({
             title: "Sample Ticket",
@@ -32,12 +32,14 @@ describe("Orders API", () => {
             .send()
             .expect(201);
 
-        expect(response.body.ticket.id).toBe(ticket.id);
-        expect(response.body.status).toBe(OrderStatus.Created);
-        expect(response.body.userId).toBeDefined();
+
+
+        expect(response.body.order.ticket.id).toBe(ticket.id.toString());
+        expect(response.body.order.status).toBe(OrderStatus.Created);
+        expect(response.body.order.userId).toBeDefined();
     });
 
-    // // ✅ Ticket reservation logic test
+
     it("returns 400 if ticket is already reserved", async () => {
         const ticket = Ticket.build({
             title: "Concert Ticket",
@@ -77,7 +79,7 @@ describe("Orders API", () => {
         expect(response.body.errors[0].message).toBe("Order not found");
     });
 
-    // ✅ DELETE /api/orders/:orderId cancels order
+
     it("DELETE /api/orders/:orderId cancels an order", async () => {
         const ticket = Ticket.build({
 
@@ -94,25 +96,27 @@ describe("Orders API", () => {
             .send()
             .expect(201);
 
+
+
+
         await request(app)
-            .delete(`/api/orders/${createRes.body.id}`)
+            .delete(`/api/orders/${createRes.body.order.id}`)
             .set("Cookie", user)
             .send()
             .expect(204);
 
-        // Expect order to be canceled
-        const updatedOrder = await Order.findById(createRes.body.id);
+
+        const updatedOrder = await Order.findById(createRes.body.order.id);
         expect(updatedOrder!.status).toBe(OrderStatus.Cancelled);
     });
 
-    // ✅ POST /api/orders/:orderId/pay returns payment success
     it("POST /api/orders/:orderId/pay returns success", async () => {
         const ticket = Ticket.build({
             title: "Payment Ticket",
             price: 300,
         });
         await ticket.save();
-        console.log(ticket.id);
+
 
 
         const user = global.signin();
@@ -122,13 +126,39 @@ describe("Orders API", () => {
             .send()
             .expect(201);
 
+
+
         const payRes = await request(app)
-            .post(`/api/orders/${orderRes.body.id}/pay`)
+            .post(`/api/orders/${orderRes.body.order.id}/pay`)
             .set("Cookie", user)
             .send()
             .expect(200);
 
         expect(payRes.body.status).toBe("Payment successful");
+    });
+
+
+    it("GET particular order of User", async () => {
+        const ticket = Ticket.build({
+            title: "User Order Ticket",
+            price: 400,
+        });
+        await ticket.save();
+
+        const user = global.signin();
+        const orderRes = await request(app)
+            .post(`/api/orders/${ticket.id}`)
+            .set("Cookie", user)
+            .send()
+            .expect(201);
+
+        const getRes = await request(app)
+            .get(`/api/orders`)
+            .set("Cookie", user)
+            .send()
+            .expect(200);
+
+        expect(getRes.body.orders[0].id).toBe(orderRes.body.id);
     });
 
 });

@@ -21,6 +21,10 @@ app.use(cookieSession({
     sameSite: "lax",
 }));
 
+if (process.env.NODE_ENV !== 'test') {
+    app.use(morgan('dev'));
+}
+
 app.use((req, res, next) => {
     console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`);
     next();
@@ -30,12 +34,10 @@ app.use(getCurrentUser as RequestHandler);
 
 app.use("/api/tickets", createTicketRouter);
 
-
 app.use((req, res, next) => {
     next(new CustomError(`Route ${req.originalUrl} not found`, 404));
 });
 
-// Global error handler - must be last
 app.use(errorHandler);
 
 export { app };

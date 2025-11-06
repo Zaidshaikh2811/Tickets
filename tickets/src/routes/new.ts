@@ -1,5 +1,5 @@
 import express, { Request, Response } from "express";
-import { body } from "express-validator";
+import { body, param } from "express-validator";
 import { validateRequest, requireAuth } from "@zspersonal/common";
 import { addTicket, deleteTicket, getTickets, updateTicket, getParticularTicket } from "../controller/ticketsController";
 
@@ -20,11 +20,29 @@ router.post("/", requireAuth, [
 
 
 router.get("/", getTickets);
-router.get("/:id", getParticularTicket)
+router.get("/:id",
+    [
+        param("id").isMongoId().withMessage("Invalid ticket ID"),
+    ],
+    validateRequest,
+    requireAuth,
+    getParticularTicket)
 
-router.put("/:id", updateTicket);
+router.put("/:id", [
+    param("id").isMongoId().withMessage("Invalid ticket ID"),
+    body("title")
+        .not().isEmpty().withMessage("Title is required"),
+    body("price")
+        .isFloat({ gt: 0 }).withMessage("Price must be greater than 0"),
+    validateRequest,
+    requireAuth
+], updateTicket);
 
-router.delete("/:id", deleteTicket);
+router.delete("/:id", [
+    param("id").isMongoId().withMessage("Invalid ticket ID"),
+    validateRequest,
+    requireAuth
+], deleteTicket);
 
 
 export { router as createTicketRouter };

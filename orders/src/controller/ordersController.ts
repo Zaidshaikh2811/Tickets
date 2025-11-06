@@ -14,34 +14,40 @@ declare global {
 }
 
 
-export const getOrders = (req: Request, res: Response) => {
+const ensureValidMongoId = (id: string) => {
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+        throw new CustomError("Invalid ID format", 400);
+    }
+};
 
-    res.status(200).send({ orders: [] });
+export const getOrders = async (req: Request, res: Response) => {
+    const userId = req.currentUser?.id;
+
+    const orders = await Order.find({ userId }).populate("ticket").lean();
+
+    res.status(200).send({ success: true, orders });
 
 };
 
 export const createOrder = async (req: Request, res: Response) => {
     const { ticketId } = req.params;
 
-    console.log("Start from cotroller");
+    ensureValidMongoId(ticketId);
 
     const ticket = await Ticket.findById(ticketId);
-    console.log(ticket);
 
-    if (!ticket) {
-        throw new CustomError("Order not found", 404);
-    }
 
-    const existingOrder = await ticket.isReserved();
-    console.log("existingOrder order ");
+    if (!ticket) throw new CustomError("Ticket not found", 404);
 
-    if (existingOrder) {
-        throw new CustomError("Ticket is already reserved", 400);
-    }
+
+    const isReserved = await ticket.isReserved();
+
+    if (isReserved) throw new CustomError("Ticket is already reserved", 400);
+
 
     const expiration = new Date();
     expiration.setMinutes(expiration.getMinutes() + 15);
-    console.log("saving");
+
 
     const order = Order.build({
         userId: new mongoose.Types.ObjectId(req.currentUser!.id) as unknown as mongoose.Schema.Types.ObjectId,
@@ -50,9 +56,11 @@ export const createOrder = async (req: Request, res: Response) => {
         ticket: ticket
     });
     await order.save();
-    console.log("Saved from controller");
 
-    res.status(201).send(order);
+
+
+
+    res.status(201).send({ success: true, order });
 
 
 }
@@ -61,44 +69,59 @@ export const createOrder = async (req: Request, res: Response) => {
 export const getOrderById = async (req: Request, res: Response) => {
 
     const { orderId } = req.params;
+    ensureValidMongoId(orderId);
     const order = await Order.findById(orderId).populate('ticket');
-    if (!order) {
-        console.log("Order Not FOund");
-
-        throw new CustomError("Order not found", 404);
-    }
-    res.status(200).send({ order });
+    if (!order) throw new CustomError("Order not found", 404);
+    res.status(200).send({ success: true, order });
 
 
 }
 
 export const cancelOrder = async (req: Request, res: Response) => {
-
-
     const { orderId } = req.params;
+
+
+    ensureValidMongoId(orderId);
+
+
     const order = await Order.findById(orderId);
     if (!order) {
         throw new CustomError("Order not found", 404);
     }
     order.status = OrderStatus.Cancelled;
     await order.save();
-    res.status(204).send({});
+    console.log("Cancled Order");
+
+    res.status(204).send();
 
 
 }
 export const payForOrder = (req: Request, res: Response) => {
 
     const { orderId } = req.params;
-    // Logic to pay for order
-    res.status(200).send({ order: { id: orderId }, status: 'Payment successful' });
+    ensureValidMongoId(orderId);
+    res.status(200).send({ success: true, order: { id: orderId }, status: 'Payment successful' });
 
 
 }
-export const updateOrder = (req: Request, res: Response) => {
+export const updateOrder = async (req: Request, res: Response) => {
 
     const { orderId } = req.params;
     const { status } = req.body;
-    // Logic to update order
+
+    ensureValidMongoId(orderId);
+
+    if (!Object.values(OrderStatus).includes(status)) {
+        throw new CustomError("Invalid order status", 400);
+    }
+
+    const order = await Order.findById(orderId);
+    if (!order) {
+        throw new CustomError("Order not found", 404);
+    }
+    order.status = status;
+    await order.save();
+
     res.status(200).send({ order: { id: orderId, status } });
 
 }

@@ -16,9 +16,7 @@ interface TicketDoc extends mongoose.Document {
     updatedAt: Date;
 }
 
-/**
- * Properties that the Ticket Model has
- */
+
 interface TicketModel extends mongoose.Model<TicketDoc> {
     build(attrs: TicketAttrs): TicketDoc;
 }
