@@ -1,4 +1,4 @@
-# TicketForge (Tickets) — Microservices Example
+# TicketForge (Tickets) — Microservices
 
 This repository is a compact microservices playground for a ticketing/event platform. It contains small, focused services that are easy to run locally, containerize, and extend.
 
