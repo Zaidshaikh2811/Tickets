@@ -15,6 +15,10 @@ interface OutboxEventDoc extends mongoose.Document {
     eventType: string;
     data: any;
     status: OutboxStatus;
+    processed: boolean;
+    processedAt?: Date;
+    lockedBy?: string | null;
+    lockedAt?: Date | null;
     createdAt: Date;
     updatedAt: Date;
 }
@@ -25,14 +29,11 @@ interface OutboxEventModel extends mongoose.Model<OutboxEventDoc> {
 
 const outboxSchema = new mongoose.Schema(
     {
-        eventType: { type: String, required: true, index: true },
+        eventType: { type: String, required: true },
         data: { type: Object, required: true },
-        status: {
-            type: String,
-            enum: Object.values(OutboxStatus),
-            default: OutboxStatus.Pending,
-            index: true,
-        },
+        processed: { type: Boolean, default: false, index: true },
+        lockedBy: { type: String, default: null },
+        lockedAt: { type: Date, default: null },
     },
     { timestamps: true }
 );

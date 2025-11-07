@@ -10,8 +10,8 @@ const config = {
     },
 };
 
-let isShuttingDown = false;
 
+console.log("config:", config);
 
 
 
@@ -36,10 +36,8 @@ export const startServices = async () => {
     try {
 
 
-        natsWrapper.client.on("close", () => {
-            console.log("NATS connection closed. Exiting...");
-            process.exit();
-        });
+
+
 
         await natsWrapper.connect(
             config.nats.clusterId,
@@ -47,6 +45,10 @@ export const startServices = async () => {
             config.nats.url
         );
 
+        natsWrapper.client.on("close", () => {
+            console.log("NATS connection closed. Exiting...");
+            process.exit();
+        });
 
 
 

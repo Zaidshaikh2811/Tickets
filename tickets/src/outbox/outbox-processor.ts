@@ -5,6 +5,7 @@ import { natsWrapper } from "../nats-wrapper";
 let isRunning = false;
 let isShuttingDown = false;
 let processorInterval: NodeJS.Timeout | null = null;
+const WORKER_ID = `worker-${Math.random().toString(36).substring(2, 10)}`;
 
 
 const publishEvent = (event: any): Promise<void> => {
@@ -28,36 +29,51 @@ const processOutbox = async () => {
     isRunning = true;
 
     try {
+        const event = await OutboxEvent.findOneAndUpdate(
+            {
+                processed: false,
+                $or: [
+                    { lockedBy: null },
+                    { lockedAt: { $lt: new Date(Date.now() - 30_000) } },
+                ],
+            },
+            {
+                lockedBy: WORKER_ID,
+                lockedAt: new Date(),
+            },
+            { new: true }
+        );
 
-        const events = await OutboxEvent.find({
-            processed: false,
-
-        }).limit(20);
-
-        for (const event of events) {
-            if (isShuttingDown) break;
-
-            try {
-                await publishEvent(event);
-
-                event.processed = true;
-                event.processedAt = new Date();
-                await event.save();
-
-                console.log(` Outbox event processed: ${event._id}`);
-
-            } catch (err) {
-                console.error(` Failed to process Outbox event ${event._id}:`, err);
-
-            }
+        if (!event) {
+            isRunning = false;
+            return;
         }
+
+        try {
+            await publishEvent(event);
+            event.processed = true;
+            event.processedAt = new Date();
+            event.lockedBy = null;
+            event.lockedAt = null;
+
+            await event.save();
+
+            console.log(` Outbox event processed: ${event._id}`);
+
+        } catch (err) {
+            console.error(` Failed to process Outbox event ${event._id}:`, err);
+            await OutboxEvent.updateOne(
+                { _id: event._id },
+                { lockedBy: null, lockedAt: null }
+            );
+        }
+
     } catch (err) {
-        console.error(` Unexpected Outbox Processor Error:`, err);
+        console.error("🔥 Unexpected Outbox Processor Error:", err);
     }
 
     isRunning = false;
 };
-
 
 export const startOutboxProcessor = () => {
     if (processorInterval) {

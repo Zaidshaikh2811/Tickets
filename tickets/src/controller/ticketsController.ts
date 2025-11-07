@@ -1,10 +1,12 @@
 
 import { Request, Response } from "express";
-import { Ticket } from "../models/tickets"
+
 import { CustomError, ensureValidMongoId } from "@zspersonal/common"
 import { TicketCreatedPublisher } from "../events/publisher/ticket-created-publisher";
 import { natsWrapper } from "../nats-wrapper";
 import { TicketUpdatedPublisher } from "../events/publisher/ticker-updated-publihser";
+import { OutboxEvent, OutboxStatus } from "../models/outbox";
+import { Ticket } from "../models/tickets";
 
 
 declare global {
@@ -37,29 +39,35 @@ export const addTicket = async (req: Request, res: Response) => {
 
 
     const ticket = Ticket.build({ title, price, userId });
+
+
     await ticket.save();
 
-    new TicketCreatedPublisher(natsWrapper.client).publish({
-        id: ticket.id,
-        title: ticket.title,
-        price: ticket.price,
-        userId: ticket.userId,
-    });
+    // new TicketCreatedPublisher(natsWrapper.client).publish({
+    //     id: ticket.id,
+    //     title: ticket.title,
+    //     price: ticket.price,
+    //     userId: ticket.userId,
+    // });
+    console.log("ticket created:", ticket);
 
-    // const outboxEvent = await OutboxEvent.create(
-    //     {
-    //         eventType: "TicketCreated",
-    //         data: {
-    //             id: ticket.id,
-    //             title: ticket.title,
-    //             price: ticket.price,
-    //             userId: ticket.userId,
-    //             version: ticket.version,
-    //         },
-    //         status: OutboxStatus.Pending,
-    //     },
 
-    // );
+    const outboxEvent = await OutboxEvent.create(
+        {
+            eventType: "TicketCreated",
+            data: {
+                id: ticket.id,
+                title: ticket.title,
+                price: ticket.price,
+                userId: ticket.userId,
+                version: ticket.version,
+            },
+            status: OutboxStatus.Pending,
+        },
+
+    );
+    console.log("outboxEvent created:", outboxEvent);
+
 
 
     res.status(201).json({ success: true, data: ticket });

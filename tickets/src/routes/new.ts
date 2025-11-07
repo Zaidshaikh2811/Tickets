@@ -10,13 +10,15 @@ router.get("/health", (req: Request, res: Response) => {
     res.send({ status: "Tickets service is healthy" });
 });
 
-router.post("/", requireAuth, [
-    body("title")
-        .not().isEmpty().withMessage("Title is required"),
-    body("price")
-        .isFloat({ gt: 0 }).withMessage("Price must be greater than 0"),
-    validateRequest
-], addTicket);
+router.post("/",
+    requireAuth,
+    [
+        body("title")
+            .not().isEmpty().withMessage("Title is required"),
+        body("price")
+            .isFloat({ gt: 0 }).withMessage("Price must be greater than 0"),
+        validateRequest
+    ], addTicket);
 
 
 router.get("/", getTickets);

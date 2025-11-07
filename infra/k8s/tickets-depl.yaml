@@ -33,7 +33,7 @@ spec:
             - name: NATS_CLIENT_ID
               value: tickets-client
             - name: NATS_URL
-              value: nats://nats-service:4222    
+              value: nats://nats-service:4222  
 
 ---
 apiVersion: v1
