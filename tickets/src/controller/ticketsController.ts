@@ -6,6 +6,7 @@ import { TicketCreatedPublisher } from "../events/publisher/ticket-created-publi
 import { natsWrapper } from "../nats-wrapper";
 import { TicketUpdatedPublisher } from "../events/publisher/ticker-updated-publihser";
 
+
 declare global {
     namespace Express {
         interface Request {
@@ -16,7 +17,7 @@ declare global {
 
 
 
-export const addTicket = (req: Request, res: Response) => {
+export const addTicket = async (req: Request, res: Response) => {
 
 
     const { title, price } = req.body;
@@ -26,14 +27,17 @@ export const addTicket = (req: Request, res: Response) => {
         throw new CustomError("User not authenticated", 401);
     }
 
+    console.log("User ID is valid:", userId);
     ensureValidMongoId(userId);
+
 
     if (!title || price === undefined) {
         throw new CustomError("Title and Price are required", 400);
     }
 
+
     const ticket = Ticket.build({ title, price, userId });
-    ticket.save();
+    await ticket.save();
 
     new TicketCreatedPublisher(natsWrapper.client).publish({
         id: ticket.id,
@@ -42,7 +46,25 @@ export const addTicket = (req: Request, res: Response) => {
         userId: ticket.userId,
     });
 
+    // const outboxEvent = await OutboxEvent.create(
+    //     {
+    //         eventType: "TicketCreated",
+    //         data: {
+    //             id: ticket.id,
+    //             title: ticket.title,
+    //             price: ticket.price,
+    //             userId: ticket.userId,
+    //             version: ticket.version,
+    //         },
+    //         status: OutboxStatus.Pending,
+    //     },
+
+    // );
+
+
     res.status(201).json({ success: true, data: ticket });
+
+
 }
 
 export const getTickets = async (req: Request, res: Response) => {

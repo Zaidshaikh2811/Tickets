@@ -1,10 +1,20 @@
 import { app } from "./app";
-import { connectToDatabase } from "./db/db";
+import { startServices, setupGracefulShutdown } from "./db/db";
+import { startOutboxProcessor } from "./outbox/outbox-processor";
 
 const port = process.env.PORT || 3001;
 
-app.listen(port, async () => {
-    await connectToDatabase();
-    console.log('JWT Key:', process.env.JWT_KEY);
-    console.log(`Tickets service   listening on port ${port}`);
-});
+const start = async () => {
+
+
+    await startServices();
+    setupGracefulShutdown();
+
+    startOutboxProcessor();
+
+    app.listen(port, () => {
+        console.log(`Orders service running on port ${port}`);
+    });
+};
+
+start();

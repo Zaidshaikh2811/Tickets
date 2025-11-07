@@ -25,6 +25,9 @@ class NatsWrapper {
             });
         });
     }
+    onClose(handler: () => void) {
+        this.client?.on("close", handler);
+    }
 }
 
 export const natsWrapper = new NatsWrapper();

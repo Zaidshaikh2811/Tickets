@@ -17,7 +17,7 @@ spec:
       containers:
         - name: tickets
           imagePullPolicy: Never
-          image: YOUR_USERNAME/tickets:latest
+          image: zaidshaikh2811/tickets:latest
           ports:
             - containerPort: 3001
           env:
@@ -27,7 +27,13 @@ spec:
               valueFrom:
                 secretKeyRef:
                   name: jwt-secret
-                  key: JWT_KEY    
+                  key: JWT_KEY   
+            - name: NATS_CLUSTER_ID
+              value: ticketing
+            - name: NATS_CLIENT_ID
+              value: tickets-client
+            - name: NATS_URL
+              value: nats://nats-service:4222    
 
 ---
 apiVersion: v1
