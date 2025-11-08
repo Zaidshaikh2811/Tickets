@@ -224,6 +224,8 @@ describe("Ticket Controller", () => {
 
 
 
+
+
     it("creates a ticket + outbox event without publishing to NATS", async () => {
         const title = "Concert";
         const price = 199;

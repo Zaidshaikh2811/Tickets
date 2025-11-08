@@ -52,7 +52,7 @@ export const addTicket = async (req: Request, res: Response) => {
 
 
 
-    const outboxEvent = await OutboxEvent.create(
+    await OutboxEvent.create(
         {
             eventType: Subjects.TicketCreated,
             data: {
@@ -77,11 +77,18 @@ export const addTicket = async (req: Request, res: Response) => {
 
 export const getTickets = async (req: Request, res: Response) => {
     try {
-        const tickets = await Ticket.find().sort({ createdAt: -1 }).lean();
+        const { page = '1', limit = '10' } = req.query as { page?: string; limit?: string };
+        const pageNum = Math.max(1, parseInt(page as string, 10) || 1);
+        const limitNum = Math.max(1, parseInt(limit as string, 10) || 10);
+
+        const tickets = await Ticket.find()
+            .sort({ createdAt: -1 })
+            .skip((pageNum - 1) * limitNum)
+            .limit(limitNum)
+            .lean();
         res.status(200).json({ success: true, count: tickets.length, data: tickets });
     } catch (err) {
         throw new CustomError("Internal Server Error", 500);
-
     }
 }
 
@@ -117,12 +124,26 @@ export const updateTicket = async (req: Request, res: Response) => {
 
     await existingTicket.save();
 
-    new TicketUpdatedPublisher(natsWrapper.client).publish({
-        id: existingTicket.id,
-        title: existingTicket.title,
-        price: existingTicket.price,
-        userId: existingTicket.userId,
-    });
+    // new TicketUpdatedPublisher(natsWrapper.client).publish({
+    //     id: existingTicket.id,
+    //     title: existingTicket.title,
+    //     price: existingTicket.price,
+    //     userId: existingTicket.userId,
+    // });
+    await OutboxEvent.create(
+        {
+            eventType: Subjects.TicketUpdated,
+            data: {
+                id: existingTicket.id,
+                title: existingTicket.title,
+                price: existingTicket.price,
+                userId: existingTicket.userId,
+                version: existingTicket.version,
+            },
+            status: OutboxStatus.Pending,
+        },
+
+    );
 
     res.status(200).json({ success: true, message: "Ticket updated successfully", data: existingTicket });
 
@@ -150,7 +171,7 @@ export const getParticularTicket = async (req: Request, res: Response) => {
 
     ensureValidMongoId(ticketId);
 
-    const ticket = await Ticket.findById(ticketId);
+    const ticket = await Ticket.findById(ticketId).lean();
     if (!ticket) {
         throw new CustomError("Ticket not found", 404);
     }

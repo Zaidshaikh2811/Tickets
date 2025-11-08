@@ -27,13 +27,13 @@ router.get(
 
 router.post(
     "/:ticketId",
+    requireAuth,
     [
         param("ticketId")
             .custom(id => mongoose.Types.ObjectId.isValid(id))
             .withMessage("TicketId must be a valid Mongo ID")
     ],
     validateRequest,
-    requireAuth,
     createOrder
 );
 

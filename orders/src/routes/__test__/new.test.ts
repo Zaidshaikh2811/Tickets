@@ -223,7 +223,7 @@ describe("Orders API", () => {
 
     it("handles concurrent updates correctly", async () => {
         // Create a ticket
-        const ticket = Ticket.build({ title: "concert", price: 20 });
+        const ticket = Ticket.build({ title: "concert", price: 20, userId: 'testuser' });
         await ticket.save();
 
         // Fetch the same ticket twice (simulate two users editing at same time)

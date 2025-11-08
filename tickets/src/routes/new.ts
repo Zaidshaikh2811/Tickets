@@ -33,7 +33,7 @@ router.get("/:ticketId",
 
 router.put("/:ticketId", [
     param("ticketId").isMongoId().withMessage("Invalid ticket ID"),
-    body("title").isEmpty().withMessage("Title is required"),
+    body("title").notEmpty().withMessage("Title is required"),
     body("price").optional()
         .isFloat({ gt: 0 }).withMessage("Price must be greater than 0"),
     validateRequest,

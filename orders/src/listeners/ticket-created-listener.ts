@@ -3,7 +3,7 @@ import { Subjects, Listener, TicketCreatedEvent, OrderStatus } from "@zspersonal
 import { Ticket } from "../model/tickets";
 import { queueGroupName } from "./queue-group-name";
 import { Order } from "../model/orders";
-import mongoose from "mongoose";
+
 
 
 export class TicketCreatedListener extends Listener<TicketCreatedEvent> {
@@ -12,6 +12,13 @@ export class TicketCreatedListener extends Listener<TicketCreatedEvent> {
 
     async onMessage(data: TicketCreatedEvent['data'], msg: Message) {
         const { id, title, price, userId, version } = data;
+
+        const existing = await Ticket.findById(id);
+        if (existing) {
+            console.log(`Ticket ${id} already exists, skipping`);
+            return msg.ack();
+        }
+
 
         const ticket = Ticket.build({
             id,
@@ -22,19 +29,16 @@ export class TicketCreatedListener extends Listener<TicketCreatedEvent> {
         });
         await ticket.save();
 
-        console.log("Ticket Saved");
 
         const expiration = new Date();
         expiration.setMinutes(expiration.getMinutes() + 15);
 
-        console.log("Ticket Expiration Set:", expiration);
 
         const order = Order.build({
             userId,
             status: OrderStatus.Created,
             expiresAt: expiration,
-            ticket,
-            version
+            ticket
         });
         await order.save();
 
@@ -50,7 +54,6 @@ export class TicketCreatedListener extends Listener<TicketCreatedEvent> {
         //     version: order.version
         // });
 
-        console.log("Order Created:", order);
 
         msg.ack();
     }
