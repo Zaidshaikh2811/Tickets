@@ -23,26 +23,25 @@ router.post("/",
 
 router.get("/", getTickets);
 
-router.get("/:ticketId ",
+router.get("/:ticketId",
     [
-        param("id").isMongoId().withMessage("Invalid ticket ID"),
+        param("ticketId").isMongoId().withMessage("Invalid ticket ID"),
     ],
     validateRequest,
     requireAuth,
     getParticularTicket)
 
-router.put("/:ticketId ", [
-    param("id").isMongoId().withMessage("Invalid ticket ID"),
-    body("title")
-        .not().isEmpty().withMessage("Title is required"),
-    body("price")
+router.put("/:ticketId", [
+    param("ticketId").isMongoId().withMessage("Invalid ticket ID"),
+    body("title").isEmpty().withMessage("Title is required"),
+    body("price").optional()
         .isFloat({ gt: 0 }).withMessage("Price must be greater than 0"),
     validateRequest,
     requireAuth
 ], updateTicket);
 
-router.delete("/:ticketId ", [
-    param("id").isMongoId().withMessage("Invalid ticket ID"),
+router.delete("/:ticketId", [
+    param("ticketId").isMongoId().withMessage("Invalid ticket ID"),
     validateRequest,
     requireAuth
 ], deleteTicket);

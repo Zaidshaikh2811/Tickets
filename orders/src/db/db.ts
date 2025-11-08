@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 import { natsWrapper } from '../nats-wrapper';
-
+import { TicketCreatedListener } from '../listeners/ticket-created-listener';
+import { TicketUpdatedListener } from '../listeners/ticket-updated-listener';
 
 const config = {
     mongoURI: process.env.MONGO_URI || 'mongodb://orders-mongo-srv:27017/ordersdb',
@@ -45,7 +46,21 @@ const connectToDatabase = async (): Promise<void> => {
         });
 
 
-        gracefulShutdown();
+        await natsWrapper.connect(
+            config.nats.clusterId,
+            config.nats.clientId,
+            config.nats.url
+        );
+        console.log('✅ NATS connected successfully');
+
+        natsWrapper.client.on('close', () => {
+            console.warn('⚠️ NATS connection closed. Waiting for reconnect...');
+        });
+        new TicketCreatedListener(natsWrapper.client).listen();
+        new TicketUpdatedListener(natsWrapper.client).listen();
+
+
+
 
     } catch (error) {
         console.error('❌ MongoDB initial connection failed:', error);
@@ -54,7 +69,7 @@ const connectToDatabase = async (): Promise<void> => {
     }
 };
 
-const gracefulShutdown = async () => {
+export const gracefulShutdown = async () => {
     console.log('\n Initiating graceful shutdown...');
 
     try {

@@ -22,11 +22,11 @@ spec:
             - containerPort: 3001
           env:
             - name : NATS_CLUSTER_ID
-              value: nats-cluster
+              value: ticketing
             - name : NATS_CLIENT_ID
               value: orders-srv
             - name : NATS_URL
-              value: nats://nats-srv:4222
+              value: nats://nats-service:4222  
             - name: MONGO_URI
               value: mongodb://orders-mongo-srv:27017/ordersdb
             - name: JWT_KEY

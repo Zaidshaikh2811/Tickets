@@ -3,19 +3,18 @@ import { OrderStatus } from "@zspersonal/common";
 import { TicketDoc } from "./tickets";
 
 interface OrderAttrs {
-    userId: mongoose.Schema.Types.ObjectId;
+    userId: string;
     status: OrderStatus;
     ticket: TicketDoc;
     expiresAt: Date;
+    version: number;
 }
 
 interface OrderDoc extends mongoose.Document {
-    userId: mongoose.Schema.Types.ObjectId;
+    userId: string;
     status: OrderStatus;
     ticket: TicketDoc;
     expiresAt: Date;
-    createdAt: string;
-    updatedAt: string;
     version: number;
 }
 
@@ -28,7 +27,7 @@ interface OrderModel extends mongoose.Model<OrderDoc> {
 
 const orderSchema = new mongoose.Schema<OrderDoc>({
     userId: {
-        type: mongoose.Schema.Types.ObjectId,
+        type: String,
         required: true,
         ref: "User"
     },

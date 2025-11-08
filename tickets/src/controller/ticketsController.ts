@@ -1,7 +1,7 @@
 
 import { Request, Response } from "express";
 
-import { CustomError, ensureValidMongoId } from "@zspersonal/common"
+import { CustomError, ensureValidMongoId, Subjects } from "@zspersonal/common"
 import { TicketCreatedPublisher } from "../events/publisher/ticket-created-publisher";
 import { natsWrapper } from "../nats-wrapper";
 import { TicketUpdatedPublisher } from "../events/publisher/ticker-updated-publihser";
@@ -29,7 +29,7 @@ export const addTicket = async (req: Request, res: Response) => {
         throw new CustomError("User not authenticated", 401);
     }
 
-    console.log("User ID is valid:", userId);
+
     ensureValidMongoId(userId);
 
 
@@ -49,12 +49,12 @@ export const addTicket = async (req: Request, res: Response) => {
     //     price: ticket.price,
     //     userId: ticket.userId,
     // });
-    console.log("ticket created:", ticket);
+
 
 
     const outboxEvent = await OutboxEvent.create(
         {
-            eventType: "TicketCreated",
+            eventType: Subjects.TicketCreated,
             data: {
                 id: ticket.id,
                 title: ticket.title,
@@ -66,7 +66,7 @@ export const addTicket = async (req: Request, res: Response) => {
         },
 
     );
-    console.log("outboxEvent created:", outboxEvent);
+
 
 
 
@@ -90,9 +90,12 @@ export const getTickets = async (req: Request, res: Response) => {
 
 export const updateTicket = async (req: Request, res: Response) => {
 
+
     const { ticketId } = req.params;
     const userId = req.currentUser?.id;
+
     ensureValidMongoId(ticketId);
+
 
     const existingTicket = await Ticket.findById(ticketId);
     if (!existingTicket) {
@@ -121,7 +124,7 @@ export const updateTicket = async (req: Request, res: Response) => {
         userId: existingTicket.userId,
     });
 
-    res.status(200).json({ message: "Ticket updated successfully", data: existingTicket });
+    res.status(200).json({ success: true, message: "Ticket updated successfully", data: existingTicket });
 
 
 
@@ -129,16 +132,14 @@ export const updateTicket = async (req: Request, res: Response) => {
 
 export const deleteTicket = async (req: Request, res: Response) => {
 
-    const { id } = req.params;
-    const deletedTicket = await Ticket.findByIdAndDelete(id);
+    const { ticketId } = req.params;
+    const deletedTicket = await Ticket.findByIdAndDelete(ticketId);
 
     if (!deletedTicket) {
         throw new CustomError("Ticket not found", 404);
     }
 
-    res.status(200).json({ message: "Ticket deleted successfully", data: deletedTicket });
-
-
+    res.status(200).json({ success: true, message: "Ticket deleted successfully", data: deletedTicket });
 
 }
 

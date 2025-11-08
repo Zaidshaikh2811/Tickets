@@ -1,9 +1,25 @@
 import { app } from "./app";
-import { connectToDatabase } from "./db/db";
+import { connectToDatabase, gracefulShutdown } from "./db/db";
 
 const port = process.env.PORT || 3001;
 
-app.listen(port, async () => {
-    await connectToDatabase();
-    console.log(`Orders service listening on port ${port}`);
-});
+const start = async () => {
+    try {
+
+        await connectToDatabase();
+
+
+        process.on("SIGINT", gracefulShutdown);
+        process.on("SIGTERM", gracefulShutdown);
+
+
+        app.listen(port, () => {
+            console.log(` Orders service listening on port ${port}`);
+        });
+
+    } catch (err) {
+        console.error(" Failed during startup:", err);
+    }
+};
+
+start();
