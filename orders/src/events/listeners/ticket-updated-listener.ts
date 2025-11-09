@@ -1,6 +1,6 @@
 import { Message } from "node-nats-streaming";
 import { Subjects, Listener, TicketUpdatedEvent } from "@zspersonal/common";
-import { Ticket } from "../model/tickets";
+import { Ticket } from "../../model/tickets";
 import { queueGroupName } from "./queue-group-name";
 
 

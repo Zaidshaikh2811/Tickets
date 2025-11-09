@@ -1,7 +1,7 @@
 import mongoose from 'mongoose';
 import { natsWrapper } from '../nats-wrapper';
-import { TicketCreatedListener } from '../listeners/ticket-created-listener';
-import { TicketUpdatedListener } from '../listeners/ticket-updated-listener';
+import { TicketCreatedListener } from '../events/listeners/ticket-created-listener';
+import { TicketUpdatedListener } from '../events/listeners/ticket-updated-listener';
 
 const config = {
     mongoURI: process.env.MONGO_URI || 'mongodb://orders-mongo-srv:27017/ordersdb',
@@ -12,84 +12,69 @@ const config = {
     },
 };
 
-
 const validateEnv = () => {
-    const requiredEnvVars = ['NATS_CLUSTER_ID', 'NATS_CLIENT_ID', 'NATS_URL'];
+    const requiredEnvVars = [
+        'MONGO_URI',
+        'NATS_CLUSTER_ID',
+        'NATS_CLIENT_ID',
+        'NATS_URL',
+    ];
     const missingVars = requiredEnvVars.filter((key) => !process.env[key]);
 
     if (missingVars.length > 0) {
-        throw new Error(`Missing required environment variables: ${missingVars.join(', ')}`);
+        throw new Error(`❌ Missing required environment variables: ${missingVars.join(', ')}`);
     }
 };
 
+export const gracefulShutdown = async () => {
+    console.log('\n🛑 Initiating graceful shutdown...');
+    try {
+        if (natsWrapper.client) {
+            await new Promise<void>((resolve) => {
+                natsWrapper.client.close();
+                natsWrapper.client.on('close', resolve);
+            });
+            console.log('✅ NATS connection closed.');
+        }
 
-const connectToDatabase = async (): Promise<void> => {
+        await mongoose.connection.close();
+        console.log('✅ MongoDB connection closed.');
+
+        console.log('👋 Graceful shutdown complete.');
+        process.exit(0);
+    } catch (error) {
+        console.error('❌ Error during graceful shutdown:', error);
+        process.exit(1);
+    }
+};
+
+export const connectToDatabase = async (): Promise<void> => {
     validateEnv();
 
     try {
-        await mongoose.connect(config.mongoURI, {
+        await natsWrapper.connect(config.nats.clusterId, config.nats.clientId, config.nats.url);
+        console.log('✅ NATS connected successfully');
 
-            retryWrites: true,
-            w: 'majority',
-            autoIndex: false,
+        natsWrapper.client.on('close', () => {
+            console.warn('⚠️ NATS connection closed. Exiting...');
+            process.exit();
         });
 
+        process.on('SIGINT', gracefulShutdown);
+        process.on('SIGTERM', gracefulShutdown);
+
+        await mongoose.connect(config.mongoURI);
         console.log('✅ MongoDB connected successfully');
-
-
-        mongoose.connection.on('disconnected', () => {
-            console.warn('⚠️ MongoDB disconnected. Attempting to reconnect...');
-        });
 
         mongoose.connection.on('error', (err) => {
             console.error('❌ MongoDB connection error:', err);
         });
 
-
-        await natsWrapper.connect(
-            config.nats.clusterId,
-            config.nats.clientId,
-            config.nats.url
-        );
-        console.log('✅ NATS connected successfully');
-
-        natsWrapper.client.on('close', () => {
-            console.warn('⚠️ NATS connection closed. Waiting for reconnect...');
-        });
         new TicketCreatedListener(natsWrapper.client).listen();
         new TicketUpdatedListener(natsWrapper.client).listen();
 
-
-
-
     } catch (error) {
-        console.error('❌ MongoDB initial connection failed:', error);
-
+        console.error('❌ Initialization error:', error);
         throw error;
     }
 };
-
-export const gracefulShutdown = async () => {
-    console.log('\n Initiating graceful shutdown...');
-
-    try {
-
-        if (natsWrapper.client) {
-            natsWrapper.client.close();
-            console.log('  NATS connection closed.');
-        }
-
-
-        await mongoose.connection.close();
-        console.log('  MongoDB connection closed.');
-
-
-        console.log(' Graceful shutdown complete. Exiting...');
-        process.exit(0);
-    } catch (error) {
-        console.error(' Error during graceful shutdown:', error);
-        process.exit(1);
-    }
-};
-
-export { connectToDatabase, config };

@@ -1,8 +1,10 @@
 import { Message } from "node-nats-streaming";
 import { Subjects, Listener, TicketCreatedEvent, OrderStatus } from "@zspersonal/common";
-import { Ticket } from "../model/tickets";
+import { Ticket } from "../../model/tickets";
 import { queueGroupName } from "./queue-group-name";
-import { Order } from "../model/orders";
+import { Order } from "../../model/orders";
+import { OrderCreatedPublisher } from "../order-created-publisher";
+import { natsWrapper } from "../../nats-wrapper";
 
 
 
@@ -42,17 +44,17 @@ export class TicketCreatedListener extends Listener<TicketCreatedEvent> {
         });
         await order.save();
 
-        // await new OrderCreatedPublisher(natsWrapper.client).publish({
-        //     id: order.id,
-        //     userId: order.userId,
-        //     status: order.status,
-        //     ticket: {
-        //         id: ticket.id,
-        //         price: ticket.price
-        //     },
-        //     expiresAt: expiration.toISOString(),
-        //     version: order.version
-        // });
+        await new OrderCreatedPublisher(natsWrapper.client).publish({
+            id: order.id,
+            userId: order.userId,
+            status: order.status,
+            ticket: {
+                id: ticket.id,
+                price: ticket.price
+            },
+            expiresAt: expiration.toISOString(),
+            version: order.version
+        });
 
 
         msg.ack();

@@ -13,6 +13,7 @@ interface TicketDoc extends mongoose.Document {
     title: string;
     price: number;
     userId: string;
+    orderId?: string;
     createdAt: Date;
     updatedAt: Date;
     version: number;
@@ -21,6 +22,7 @@ interface TicketDoc extends mongoose.Document {
 
 interface TicketModel extends mongoose.Model<TicketDoc> {
     build(attrs: TicketAttrs): TicketDoc;
+    findByEvent(event: { id: string; version: number }): Promise<TicketDoc | null>;
 }
 
 const ticketSchema = new mongoose.Schema<TicketDoc>(
@@ -39,6 +41,10 @@ const ticketSchema = new mongoose.Schema<TicketDoc>(
             type: String,
             required: true,
         },
+        orderId: {
+            type: String,
+        },
+
     },
     {
         timestamps: true,
@@ -55,7 +61,9 @@ const ticketSchema = new mongoose.Schema<TicketDoc>(
 );
 
 
-
+ticketSchema.statics.findByEvent = (event: { id: string; version: number }) => {
+    return Ticket.findOne({ _id: event.id, version: event.version - 1 });
+};
 
 ticketSchema.statics.build = (attrs: TicketAttrs) => {
     return new Ticket(attrs);
