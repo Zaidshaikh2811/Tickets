@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 import { natsWrapper } from "../nats-wrapper";
 import { OrderCreatedListener } from "../events/listener/order-created-listener";
+import { OrderCancelledListener } from "../events/listener/order-cancelled-listener";
 
 const config = {
     mongoURI: process.env.MONGO_URI,
@@ -52,6 +53,7 @@ export const startServices = async () => {
         });
 
         new OrderCreatedListener(natsWrapper.client).listen();
+        new OrderCancelledListener(natsWrapper.client).listen();
 
 
         await mongoose.connect(config.mongoURI);

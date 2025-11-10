@@ -105,8 +105,13 @@ export const updateTicket = async (req: Request, res: Response) => {
 
 
     const existingTicket = await Ticket.findById(ticketId);
+
     if (!existingTicket) {
         throw new CustomError("Ticket not found", 404);
+    }
+
+    if (existingTicket.orderId) {
+        throw new CustomError("Cannot edit a reserved ticket", 400);
     }
 
     if (existingTicket.userId !== userId) {

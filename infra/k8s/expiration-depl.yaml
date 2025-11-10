@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: expiration-deployment
+  labels:
+    app: expiration
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: expiration
+  template:
+    metadata:
+      labels:
+        app: expiration
+    spec:
+      containers:
+        - name: expiration
+          imagePullPolicy: Never
+          image: zaidshaikh2811/expiration:latest
+          ports:
+            - containerPort: 3001
+          env:
+            - name: NATS_CLUSTER_ID
+              value: ticketing
+            - name: NATS_CLIENT_ID
+              value: expiration-client
+            - name: NATS_URL
+              value: nats://nats-service:4222  
+            - name : REDIS_HOST
+              value: expiration-redis-srv
+            - name : REDIS_PORT
+              value: "6379"  
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: expiration-srv
+spec:
+  selector:
+    app: expiration
+  ports:
+    - port: 3001
+      protocol: TCP
+      name: http
+      targetPort: 3001

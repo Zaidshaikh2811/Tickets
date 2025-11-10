@@ -44,7 +44,7 @@ export class TicketCreatedListener extends Listener<TicketCreatedEvent> {
         });
         await order.save();
 
-        await new OrderCreatedPublisher(natsWrapper.client).publish({
+        await new OrderCreatedPublisher(this.client).publish({
             id: order.id,
             userId: order.userId,
             status: order.status,
