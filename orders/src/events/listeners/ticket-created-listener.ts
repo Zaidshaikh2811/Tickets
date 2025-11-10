@@ -4,9 +4,6 @@ import { Ticket } from "../../model/tickets";
 import { queueGroupName } from "./queue-group-name";
 import { Order } from "../../model/orders";
 import { OrderCreatedPublisher } from "../order-created-publisher";
-import { natsWrapper } from "../../nats-wrapper";
-
-
 
 export class TicketCreatedListener extends Listener<TicketCreatedEvent> {
     subject: Subjects.TicketCreated = Subjects.TicketCreated
@@ -33,8 +30,7 @@ export class TicketCreatedListener extends Listener<TicketCreatedEvent> {
 
 
         const expiration = new Date();
-        expiration.setMinutes(expiration.getMinutes() + 15);
-
+        expiration.setUTCMinutes(expiration.getUTCMinutes() + 1);
 
         const order = Order.build({
             userId,

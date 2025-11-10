@@ -7,6 +7,7 @@ import { Order } from '../model/orders';
 import { OrderCreatedPublisher } from '../events/order-created-publisher';
 import { natsWrapper } from '../nats-wrapper';
 import { OrderCancelledPublisher } from '../events/order-cancelled-publisher';
+import { log } from 'node:console';
 
 
 
@@ -47,7 +48,9 @@ export const createOrder = async (req: Request, res: Response) => {
 
 
     const expiration = new Date();
-    expiration.setMinutes(expiration.getMinutes() + 15);
+    expiration.setUTCMinutes(expiration.getUTCMinutes() + 1);
+    console.log("Expiration time set to:", expiration.toISOString());
+
 
     const order = Order.build({
         userId: new mongoose.Types.ObjectId(req.currentUser!.id) as unknown as mongoose.Schema.Types.ObjectId,

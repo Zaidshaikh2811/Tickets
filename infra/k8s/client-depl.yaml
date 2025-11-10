@@ -17,7 +17,7 @@ spec:
       containers:
         - name: client
           imagePullPolicy: Never
-          image: YOUR_USERNAME/client:latest
+          image: zaidshaikh2811/client:latest
           ports:
             - containerPort: 3000
 
