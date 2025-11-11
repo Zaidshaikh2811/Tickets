@@ -14,6 +14,8 @@ export class OrderCreatedListener extends Listener<OrderCreatedEvent> {
         console.log("Adding job to expiration queue for orderId:", data.id, "with delay:", delay);
         await expirationQueue.add({
             orderId: data.id,
+        }, {
+            delay
         });
         msg.ack();
     }
