@@ -33,10 +33,10 @@ export const addTicket = async (req: Request, res: Response) => {
     ensureValidMongoId(userId);
 
     const existingTicket = await Ticket.findOne({ title, status: { $in: [TicketStatus.Created, TicketStatus.Reserved] }, });
-    console.log("Existing ticket status:", existingTicket);
 
-    if (existingTicket && existingTicket.status === TicketStatus.Reserved) {
-        throw new CustomError("Ticket is currently reserved", 400);
+
+    if (existingTicket) {
+        throw new CustomError("Ticket is already created or reserved", 400);
     }
 
     if (!title || price === undefined) {
