@@ -1,6 +1,6 @@
 import { Listener, OrderCreatedEvent, Subjects } from '@zspersonal/common';
 import { orderQueueGroupName } from './queue-group-name';
-import { Ticket } from '../../models/tickets';
+import { Ticket, TicketStatus } from '../../models/tickets';
 import { TicketUpdatedPublisher } from '../publisher/ticker-updated-publihser';
 
 export class OrderCreatedListener extends Listener<OrderCreatedEvent> {
@@ -28,7 +28,7 @@ export class OrderCreatedListener extends Listener<OrderCreatedEvent> {
 
 
 
-            existingTicket.set({ orderId: id });
+            existingTicket.set({ orderId: id, status: TicketStatus.Reserved });
             await existingTicket.save();
             await new TicketUpdatedPublisher(this.client).publish({
                 id: existingTicket.id,
@@ -36,6 +36,7 @@ export class OrderCreatedListener extends Listener<OrderCreatedEvent> {
                 price: existingTicket.price,
                 userId: existingTicket.userId,
                 orderId: existingTicket.orderId || '',
+
                 version: existingTicket.version,
             });
 

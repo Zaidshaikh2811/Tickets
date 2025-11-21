@@ -5,9 +5,15 @@ interface TicketAttrs {
     title: string;
     price: number;
     userId: string;
+    orderId?: string;
 
 }
 
+export enum TicketStatus {
+    Created = 'created',
+    Reserved = 'reserved',
+    Expired = 'expired',
+}
 
 interface TicketDoc extends mongoose.Document {
     title: string;
@@ -17,6 +23,7 @@ interface TicketDoc extends mongoose.Document {
     createdAt: Date;
     updatedAt: Date;
     version: number;
+    status: TicketStatus;
 }
 
 
@@ -44,7 +51,11 @@ const ticketSchema = new mongoose.Schema<TicketDoc>(
         orderId: {
             type: String,
         },
-
+        status: {
+            type: String,
+            enum: Object.values(TicketStatus),
+            default: TicketStatus.Created,
+        },
     },
     {
         timestamps: true,

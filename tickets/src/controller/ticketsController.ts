@@ -6,7 +6,7 @@ import { TicketCreatedPublisher } from "../events/publisher/ticket-created-publi
 import { natsWrapper } from "../nats-wrapper";
 import { TicketUpdatedPublisher } from "../events/publisher/ticker-updated-publihser";
 import { OutboxEvent, OutboxStatus } from "../models/outbox";
-import { Ticket } from "../models/tickets";
+import { Ticket, TicketStatus } from "../models/tickets";
 
 
 declare global {
@@ -32,6 +32,12 @@ export const addTicket = async (req: Request, res: Response) => {
 
     ensureValidMongoId(userId);
 
+    const existingTicket = await Ticket.findOne({ title, status: { $in: [TicketStatus.Created, TicketStatus.Reserved] }, });
+
+
+    if (existingTicket) {
+        throw new CustomError("Ticket is already created or reserved", 400);
+    }
 
     if (!title || price === undefined) {
         throw new CustomError("Title and Price are required", 400);
@@ -61,6 +67,7 @@ export const addTicket = async (req: Request, res: Response) => {
                 price: ticket.price,
                 userId: ticket.userId,
                 version: ticket.version,
+                status: ticket.status,
             },
             status: OutboxStatus.Pending,
         },

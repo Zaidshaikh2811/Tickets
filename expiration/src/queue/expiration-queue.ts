@@ -1,4 +1,6 @@
 import Queue from "bull";
+import { ExpirationCompletedPublisher } from "../events/publisher/expiration-completed-publisher";
+import { natsWrapper } from "../nats-wrapper";
 
 interface ExpirationJobData {
     orderId: string;
@@ -52,7 +54,9 @@ expirationQueue.on("resumed", () => {
 
 expirationQueue.process(async (job) => {
     console.log(`Processing expiration job for orderId: ${job.data.orderId}`);
-    // Here you would typically publish an event or perform some action to expire the order
+    new ExpirationCompletedPublisher(natsWrapper.client).publish({
+        orderId: job.data.orderId,
+    });
 
 
 });

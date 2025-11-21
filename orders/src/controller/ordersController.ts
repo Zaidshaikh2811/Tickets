@@ -7,7 +7,6 @@ import { Order } from '../model/orders';
 import { OrderCreatedPublisher } from '../events/order-created-publisher';
 import { natsWrapper } from '../nats-wrapper';
 import { OrderCancelledPublisher } from '../events/order-cancelled-publisher';
-import { log } from 'node:console';
 
 
 

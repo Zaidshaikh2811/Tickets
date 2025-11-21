@@ -1,154 +1,211 @@
-# TicketForge (Tickets) — Microservices
+# 🎟️ Tickets — Microservices Example
 
-This repository is a compact microservices playground for a ticketing/event platform. It contains small, focused services that are easy to run locally, containerize, and extend.
+A clean, beginner-friendly **Node.js + TypeScript microservices** example featuring:
 
-Key goals:
- - Demonstrate a minimal event-driven microservices layout (auth, event pub/sub, client).
- - Provide clear local and containerized run instructions.
- - Keep services small and easy to reason about for experimentation and learning.
-## Table of contents
+* **Auth**
+* **Tickets**
+* **Orders**
+* **Payments**
+* **Client (frontend)**
+* **NATS Streaming** for event-based communication
+* **Kubernetes + Skaffold** for local development
 
- - Services
- - Prerequisites
- - Quick start (local)
- - Run with Docker (single service)
- - Run everything with Docker Compose (example)
- - Environment variables (by service)
- - Development notes
- - Project structure
- - Contributing
-## Project overview
+This README keeps everything simple: how the system works, how to run it locally, how to run tests, and how to use Docker/K8s.
 
-This repository is a small microservices playground for a Tickets platform. Its goals are:
+---
 
- - Demonstrate small focused services (auth, event bus (NATS), and client).
- - Provide a reproducible local development experience (TypeScript, Docker, small infra folder for manifests).
- - Showcase patterns: containerization, TypeScript compile targets, clean repo layouts.
+## 🧩 System Overview
 
-Use this repository as a learning / prototype base; treat it as a starting point and extend as needed.
-## Services
+A quick visual diagram so contributors instantly understand the flow:
 
-This repo groups small services at the top-level. Typical folders you will see:
+```mermaid
+flowchart LR
+    Client[Client App] -->|HTTP| Auth
+    Client -->|HTTP| Tickets
+    Client -->|HTTP| Orders
+    Client -->|HTTP| Payments
 
- - `auth/` — authentication microservice (Node.js + TypeScript, Express). Exposes signup, signin, current user, and health endpoints.
- - `nats/` — NATS publisher/subscriber examples (useful to exercise event flows).
- - `client/` — frontend app (React / Vite / Next, depending on what you scaffolded).
- - `common/` — shared types and helper code.
- - `infra/` — optional infra manifests (k8s, docker-compose) and secrets templates.
+    Tickets -->|Publishes Events| NATS
+    Orders -->|Publishes/Consumes Events| NATS
+    Payments -->|Publishes Events| NATS
+    Auth -->|Optional Events| NATS
 
-Each service should contain its own `package.json`, `tsconfig.json` (if TypeScript), and `Dockerfile` when relevant. Prefer reading the service folder for exact scripts and environment variables.
-## Prerequisites
+    NATS -. distributes events .-> Tickets
+    NATS -. distributes events .-> Orders
+    NATS -. distributes events .-> Payments
+```
 
- - Node.js (LTS recommended, e.g. 18 or 20)
- - npm (or yarn/pnpm)
- - Docker & Docker Compose (optional — for running containers)
- - Git
+Each service has its own DB, runs independently, and communicates via NATS events.
 
-Notes: Examples below use PowerShell syntax where appropriate (you're on Windows). On macOS/Linux replace `;` with `&&` when chaining commands.
-## Quick start — run locally (recommended for development)
+---
 
-1) Start NATS (for event examples)
+## 📁 What’s Included
+
+```
+auth/       → authentication service
+tickets/    → ticket creation & management
+orders/     → order placement, reservation, expiration
+payments/   → simple payment mock service
+client/     → frontend (React/Next/Vite etc.)
+nats/       → publisher/subscriber examples
+common/     → shared types & helpers
+infra/k8s/  → Kubernetes manifests
+diagrams/   → Mermaid diagrams
+```
+
+All services use their own `package.json`, `tsconfig.json`, and (when needed) `Dockerfile`.
+
+---
+
+## 🛠️ Prerequisites
+
+You only need:
+
+* Node.js **18+**
+* npm / pnpm
+* Docker (optional but recommended)
+* kubectl + Skaffold (for K8s workflow)
+
+---
+
+# 🚀 Quick Start — Local Development
+
+### 1️⃣ Start infrastructure (MongoDB + NATS)
 
 ```powershell
 docker run --rm -p 4222:4222 -p 8222:8222 nats:2.10.0
+docker run --rm -p 27017:27017 mongo:latest
 ```
 
-2) Run the auth service
+### 2️⃣ Start any service (example: Auth)
 
 ```powershell
 cd auth
-npm install
-npm run dev    # or npm start / npm run build && node dist/index.js depending on the service
-```
-
-3) Run the nats examples
-
-```powershell
-cd nats
-npm install
-npm run publish
-npm run subscribe
-```
-
-4) Run the client
-
-```powershell
-cd client
 npm install
 npm run dev
-# open the dev URL printed by the client
 ```
 
-Check each service's `package.json` for exact script names (`dev`, `start`, `build`) — they may differ.
-## Run a single service with Docker
+Repeat the same for:
 
-Build and run a service (example: `auth`):
+```
+tickets/
+orders/
+payments/
+client/
+```
+
+Client usually launches on port **3000**.
+
+---
+
+# 🐳 Docker — Running a Single Service
+
+Example: run the **Auth** service in Docker.
 
 ```powershell
 cd auth
-docker build -t ticketforge-auth:local .
-docker run --rm -p 3000:3000 --name ticketforge-auth -e NODE_ENV=production ticketforge-auth:local
+docker build -t tickets-auth:local .
+docker run --rm -p 3000:3000 tickets-auth:local
 ```
 
-You can place a `docker-compose.yml` under `infra/` to start multiple services together (example below).
-## Environment variables (examples)
+You can create a `docker-compose.yml` later to run multiple services together — just tell me and I’ll generate it.
 
-Create a `.env` or `.env.local` per-service for local development and never commit secrets. Here are suggested variables used by many setups in this repo:
+---
 
- - `auth/` example (`auth/.env`)
+# ☸️ Kubernetes + Skaffold (for local microservices dev)
+
+To use the full multi-service setup:
+
+```powershell
+skaffold dev
+```
+
+Skaffold will:
+
+* build all images
+* apply Kubernetes manifests from `infra/k8s/`
+* auto-rebuild when you change code
+
+To only build:
+
+```powershell
+skaffold build
+```
+
+---
+
+# 🔐 Environment Variables
+
+Each service needs its own `.env`.
+
+### Example for `auth/.env`
 
 ```
 PORT=3000
-JWT_KEY=some-super-secret
-MONGO_URI=mongodb://localhost:27017/tickets
-NATS_URL=http://localhost:4222
+JWT_KEY=super-secret
+MONGO_URI=mongodb://localhost:27017/authdb
+NATS_URL=nats://localhost:4222
 NATS_CLUSTER_ID=test-cluster
 NATS_CLIENT_ID=auth-service
 ```
 
- - `nats/` example (`nats/.env`)
-
-```
-NATS_URL=http://localhost:4222
-```
-
- - `client/` example (`client/.env`)
+### Example for `client/.env`
 
 ```
 VITE_API_URL=http://localhost:3000
 ```
 
-Add `.env.example` files to each service folder with keys only (no secrets) so contributors know what to provide.
-## Development notes and conventions
+👉 Add `.env.example` files without secrets so contributors know required keys.
 
- - Use TypeScript strict mode when possible. Keep `common/` for shared types.
- - Keep services small and independent. Each service should ideally run independently (its own `package.json`, `tsconfig.json`, and `Dockerfile`).
- - Prefer semantic commits and low-risk pull requests. Add tests where feasible.
-## Project structure
+---
+
+# 🧪 Running Tests
+
+Example (run inside any service folder):
+
+```powershell
+npm install
+npm test
+```
+
+The **tickets** service uses `mongodb-memory-server` and Jest for isolated in-memory tests.
+
+---
+
+# 📦 Project Structure (Simple View)
 
 ```
 .
-├─ auth/           # auth microservice (Node + TS)
-├─ nats/           # nats publisher / subscriber examples
-├─ client/         # frontend app
-├─ common/         # shared utilities and types
-├─ infra/          # infra manifests (k8s, docker-compose)
-├─ .gitignore
-└─ README.md
+├── auth/
+├── tickets/
+├── orders/
+├── payments/
+├── client/
+├── nats/
+├── common/
+├── infra/
+└── diagrams/
 ```
 
-Add new services using this pattern so other contributors can follow the same conventions.
-## Contributing
+---
 
-Thanks for wanting to help! Suggested workflow:
+# 🤝 Contributing
 
-1. Fork the repo and create a branch (`git checkout -b feat/your-feature`).
-2. Run and test the relevant service locally.
-3. Add tests and update `README` or `ENV` examples as needed.
-4. Open a PR with a clear description and testing notes.
+1. Create a branch
+   `git checkout -b feat/your-feature`
 
-Coding conventions
+2. Run & test the specific service you modify
 
- - Prefer descriptive commits and small PRs.
- - Keep types and shared interfaces in `common/`.
- - Add `*.example` env files when introducing new environment variables.
+3. Add tests + update `.env.example`
+
+4. Open a PR with a clean description
+
+---
+
+# 📄 License
+
+MIT License 
+
+---
+
+

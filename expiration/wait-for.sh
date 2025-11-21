@@ -3,16 +3,15 @@ set -e
 
 hostport="$1"
 shift
-
 host=$(echo "$hostport" | cut -d: -f1)
 port=$(echo "$hostport" | cut -d: -f2)
 
-echo "⏳ Waiting for $host:$port to be ready..."
+echo "⏳ Waiting for Redis at $host:$port..."
 
-until nc -z "$host" "$port"; do
-  echo "🚧 Redis not ready yet... retrying"
+until redis-cli -h "$host" -p "$port" ping | grep -q PONG; do
+  echo "🚧 Redis not ready yet..."
   sleep 1
 done
 
-echo "✅ $host:$port is up! Starting service..."
+echo "✅ Redis is ready! Starting service..."
 exec "$@"
