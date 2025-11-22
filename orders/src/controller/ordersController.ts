@@ -1,5 +1,5 @@
 
-import { Request, Response } from 'express';
+import { NextFunction, Request, Response } from 'express';
 import { CustomError, OrderStatus, ensureValidMongoId } from "@zspersonal/common"
 import mongoose from 'mongoose';
 import { Ticket } from '../model/tickets';
@@ -8,6 +8,16 @@ import { OrderCreatedPublisher } from '../events/order-created-publisher';
 import { natsWrapper } from '../nats-wrapper';
 import { OrderCancelledPublisher } from '../events/order-cancelled-publisher';
 
+
+type AsyncHandler = (
+    req: Request,
+    res: Response,
+    next: NextFunction
+) => Promise<void>;
+
+const asyncHandler =
+    (fn: AsyncHandler) => (req: Request, res: Response, next: NextFunction) =>
+        fn(req, res, next).catch(next);
 
 
 
@@ -21,16 +31,16 @@ declare global {
 
 
 
-export const getOrders = async (req: Request, res: Response) => {
+export const getOrders = asyncHandler(async (req: Request, res: Response) => {
     const userId = req.currentUser?.id;
 
     const orders = await Order.find({ userId }).populate("ticket").lean();
 
     res.status(200).send({ success: true, orders });
 
-};
+});
 
-export const createOrder = async (req: Request, res: Response) => {
+export const createOrder = asyncHandler(async (req: Request, res: Response) => {
     const { ticketId } = req.params;
 
     ensureValidMongoId(ticketId);
@@ -52,7 +62,7 @@ export const createOrder = async (req: Request, res: Response) => {
 
 
     const order = Order.build({
-        userId: new mongoose.Types.ObjectId(req.currentUser!.id) as unknown as mongoose.Schema.Types.ObjectId,
+        userId: new mongoose.Types.ObjectId(req.currentUser!.id) as any,
         status: OrderStatus.Created,
         expiresAt: expiration,
         ticket: ticket
@@ -70,13 +80,13 @@ export const createOrder = async (req: Request, res: Response) => {
         },
         version: order.version
     });
-
     res.status(201).send({ success: true, order });
 
-}
+
+})
 
 
-export const getOrderById = async (req: Request, res: Response) => {
+export const getOrderById = asyncHandler(async (req: Request, res: Response) => {
 
     const { orderId } = req.params;
     ensureValidMongoId(orderId);
@@ -86,46 +96,49 @@ export const getOrderById = async (req: Request, res: Response) => {
 
 
 }
-
-export const cancelOrder = async (req: Request, res: Response) => {
+);
+export const cancelOrder = asyncHandler(async (req: Request, res: Response) => {
     const { orderId } = req.params;
 
 
     ensureValidMongoId(orderId);
 
 
-    const order = await Order.findById(orderId);
+    const order = await Order.findById(orderId).populate('ticket');
     if (!order) {
         throw new CustomError("Order not found", 404);
+    }
+    if (order.status === OrderStatus.Cancelled) {
+        throw new CustomError("Order already cancelled", 400);
+    }
+    if (order.status === OrderStatus.Completed) {
+        throw new CustomError("Cannot cancel a completed order", 400);
     }
     order.status = OrderStatus.Cancelled;
     await order.save();
 
     new OrderCancelledPublisher(natsWrapper.client).publish({
-        id: order.id.toString(),
-        status: order.status,
-        userId: order.userId.toString(),
-        expiresAt: order.expiresAt.toISOString(),
+        id: order.ticket.id.toString(),
         ticket: {
-            id: order.ticket.toString(),
+            id: order.ticket.id.toString(),
             price: (order.ticket as any).price
         },
         version: order.version
     });
 
-    res.status(204).send({ success: true });
+    res.status(204).send({ success: true, order });
 
 
-}
-export const payForOrder = (req: Request, res: Response) => {
+});
+export const payForOrder = asyncHandler(async (req: Request, res: Response) => {
 
     const { orderId } = req.params;
     ensureValidMongoId(orderId);
     res.status(200).send({ success: true, order: { id: orderId }, status: 'Payment successful' });
 
-}
+})
 
-export const updateOrder = async (req: Request, res: Response) => {
+export const updateOrder = asyncHandler(async (req: Request, res: Response) => {
 
     const { orderId } = req.params;
     const { status } = req.body;
@@ -145,4 +158,4 @@ export const updateOrder = async (req: Request, res: Response) => {
 
     res.status(200).send({ success: true, order: { id: orderId, status } });
 
-}
+})

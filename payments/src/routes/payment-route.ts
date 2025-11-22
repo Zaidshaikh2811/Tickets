@@ -11,9 +11,15 @@ import {
     retryPayment,
     applyDiscount,
     getPaymentDetails,
+    getAllOrders
 } from "../controller/paymentController";
 
 const router = express.Router();
+
+
+router.get("/get-all-orders",
+    requireAuth,
+    getAllOrders);
 
 router.post("/",
     requireAuth,
@@ -48,9 +54,6 @@ router.get("/user/payments",
     requireAuth,
     listUserPayments);
 
-router.get("/all/payments",
-    requireAuth,
-    listAllPayments);
 
 router.post("/cancel",
     requireAuth,

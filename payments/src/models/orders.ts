@@ -11,7 +11,7 @@ interface OrderAttrs {
 }
 
 const OrderSchema = new Schema({
-    orderId: { type: String, required: true, unique: true, index: true },
+    _id: { type: String, required: true },
     userId: { type: String, required: true, index: true },
     price: { type: Number, required: true },
     currency: {
@@ -26,8 +26,10 @@ const OrderSchema = new Schema({
     version: { type: Number, default: 0 }
 }, {
     toJSON: {
+        virtuals: true,
         transform(doc: any, ret: any) {
             ret.id = ret.id;
+            ret.orderId = ret._id;
             delete ret._id;
             delete ret.__v;
         }
@@ -39,6 +41,7 @@ const OrderSchema = new Schema({
 
 
 interface OrderDoc extends mongoose.Document {
+    id: string;
     orderId: string;
     userId: string;
     price: number;
@@ -49,13 +52,17 @@ interface OrderDoc extends mongoose.Document {
     version: number;
 }
 
+OrderSchema.virtual('orderId').get(function () {
+    return this._id;
+});
+
 interface OrderModel extends mongoose.Model<OrderDoc> {
     build(attrs: OrderAttrs): OrderDoc;
 }
 
 OrderSchema.statics.build = (attrs: OrderAttrs) => {
     return new Order({
-        orderId: attrs.orderId,
+        _id: attrs.orderId,
         userId: attrs.userId,
         price: attrs.price,
         currency: attrs.currency,

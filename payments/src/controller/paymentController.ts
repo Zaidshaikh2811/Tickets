@@ -1,11 +1,15 @@
-
 import { Request, Response, NextFunction } from "express";
 import { Order } from "../models/orders";
 import { CustomError, OrderStatus } from "@zspersonal/common";
 import { Payment } from "../models/payment";
 import { PaymentCreatedPublisher } from "../events/publisher/PaymentCreatedPublisher";
+import { PaymentCompletedPublisher } from "../events/publisher/PaymentCompletedPublisher";
+import { PaymentFailedPublisher } from "../events/publisher/PaymentFailedPublisher";
+import { PaymentRefundedPublisher } from "../events/publisher/PaymentRefundedPublisher";
 import { natsWrapper } from "../nats-wrapper";
+import crypto from "crypto";
 
+const generateStripeId = () => "pi_" + crypto.randomBytes(8).toString("hex");
 
 declare global {
     namespace Express {
@@ -14,6 +18,16 @@ declare global {
         }
     }
 }
+
+type AsyncHandler = (
+    req: Request,
+    res: Response,
+    next: NextFunction
+) => Promise<void>;
+
+const asyncHandler =
+    (fn: AsyncHandler) => (req: Request, res: Response, next: NextFunction) =>
+        fn(req, res, next).catch(next);
 
 const getCurrentUserId = (req: Request): string => {
     if (!req.currentUser?.id) {
@@ -38,165 +52,293 @@ const findUserOrderOrThrow = async (orderId: string, userId: string) => {
 };
 
 
+export const paymentComplete = asyncHandler(
+    async (req: Request, res: Response) => {
+        const userId = getCurrentUserId(req);
+        const { orderId, paymentMethod } = req.body;
 
-export const paymentComplete = async (req: Request, res: Response, next: NextFunction) => {
+        const order = await findUserOrderOrThrow(orderId, userId);
 
+        if (order.status === OrderStatus.Cancelled) {
+            throw new CustomError("Cannot pay for a cancelled order", 400);
+        }
 
-    const userId = getCurrentUserId(req);
-    const { orderId, paymentMethod } = req.body;
+        if (order.status === OrderStatus.Completed) {
+            throw new CustomError("Order is already completed", 400);
+        }
 
-    const order = await findUserOrderOrThrow(orderId, userId);
+        if (
+            order.status !== OrderStatus.AwaitingPayment &&
+            order.status !== OrderStatus.Created &&
+            order.status !== OrderStatus.Pending
+        ) {
+            throw new CustomError(
+                `Cannot pay for order in status: ${order.status}`,
+                400
+            );
+        }
 
-    if ((order.status as OrderStatus) === OrderStatus.Cancelled) {
-        return next(new CustomError("Cannot pay for a cancelled order", 400));
+        const stripeId = generateStripeId();
+
+        const payment = Payment.build({
+            orderId: order.id,
+            stripeId,
+        });
+        await payment.save();
+
+        await new PaymentCreatedPublisher(natsWrapper.client).publish({
+            paymentId: payment.id,
+            orderId: payment.orderId,
+            userId,
+            amount: order.price
+        });
+
+        order.status = OrderStatus.Completed;
+        await order.save();
+
+        await new PaymentCompletedPublisher(natsWrapper.client).publish({
+            paymentId: payment.id,
+            orderId: order.id,
+            userId: order.userId,
+            amount: order.price,
+        });
+
+        res.status(200).send({ success: true, order });
     }
+);
 
-    if ((order.status as OrderStatus) === OrderStatus.Completed) {
-        return next(new CustomError("Order is already completed", 400));
+
+export const getPaymentStatus = asyncHandler(
+    async (req: Request, res: Response) => {
+        const userId = getCurrentUserId(req);
+        const { orderId } = req.params;
+
+        const order = await findUserOrderOrThrow(orderId, userId);
+
+        res.status(200).send({
+            success: true,
+            orderId: order.id,
+            status: order.status,
+        });
     }
+);
 
-    if (
-        order.status !== OrderStatus.AwaitingPayment &&
-        order.status !== OrderStatus.Created &&
-        order.status !== OrderStatus.Pending
-    ) {
-        throw new CustomError(`Cannot pay for order in status: ${order.status}`, 400);
+
+export const refundPayment = asyncHandler(
+    async (req: Request, res: Response) => {
+        const userId = getCurrentUserId(req);
+        const { orderId } = req.body;
+
+        const order = await findUserOrderOrThrow(orderId, userId);
+
+        if (order.status !== OrderStatus.Completed) {
+            throw new CustomError(
+                "Only completed orders can be refunded",
+                400
+            );
+        }
+
+        const payment = await Payment.findOne({ orderId: order.id }).sort({
+            createdAt: -1,
+        });
+
+        if (!payment) {
+            throw new CustomError(
+                "No payment found for this order to refund",
+                400
+            );
+        }
+
+        order.status = OrderStatus.Refunded;
+        await order.save();
+
+        await new PaymentRefundedPublisher(natsWrapper.client).publish({
+            paymentId: payment.id,
+            orderId: order.id,
+            userId: order.userId,
+            amount: order.price,
+        });
+
+        res.status(200).send({ success: true, order });
     }
-
-    order.status = OrderStatus.Completed;
-    await order.save();
-
-    const payment = Payment.build({
-        orderId: order.id,
-        stripeId: "some_stripe_id"
-    });
-    await payment.save();
-
-    new PaymentCreatedPublisher(natsWrapper.client).publish({
-        id: payment.id,
-        orderId: payment.orderId,
-        stripeId: payment.stripeId
-    });
-
-    res.status(200).send(order);
-}
+);
 
 
-export const getPaymentStatus = async (req: Request, res: Response, next: NextFunction) => {
+export const listUserPayments = asyncHandler(
+    async (req: Request, res: Response) => {
+        const userId = getCurrentUserId(req);
 
-    const userId = getCurrentUserId(req);
-    const { orderId } = req.params;
-    const order = await findUserOrderOrThrow(orderId, userId);
-    res.status(200).send({ orderId: order.id, status: order.status });
-}
-export const refundPayment = async (req: Request, res: Response, next: NextFunction) => {
+        const orders = await Order.find({ userId }).sort({ createdAt: -1 });
 
-    const userId = getCurrentUserId(req);
-    const { orderId } = req.body;
-    const order = await findUserOrderOrThrow(orderId, userId);
-
-    if (order.status !== OrderStatus.Completed) {
-        return next(new CustomError("Only completed orders can be refunded", 400));
+        res.status(200).send({ success: true, orders });
     }
-    order.status = OrderStatus.Refunded;
-    await order.save();
-
-    res.status(200).send(order);
-}
-
-export const listUserPayments = async (req: Request, res: Response, next: NextFunction) => {
-
-    const userId = getCurrentUserId(req);
-
-    const orders = await Order.find({ userId }).sort({ createdAt: -1 });
-
-    res.status(200).send(orders);
-}
-export const listAllPayments = async (req: Request, res: Response, next: NextFunction) => {
-
-    // if (!req.currentUser?.isAdmin) {
-    //     return next(new CustomError("Admin access required", 403));
-    // }
-
-    const orders = await Order.find({}).sort({ createdAt: -1 });
-    res.status(200).send(orders);
-}
-
-export const cancelPayment = async (req: Request, res: Response, next: NextFunction) => {
-
-    const userId = getCurrentUserId(req);
-    const { orderId } = req.body;
-    const order = await findUserOrderOrThrow(orderId, userId);
+);
 
 
-    if (order.status === OrderStatus.Cancelled) {
-        throw new CustomError("Order is already cancelled", 400);
+export const listAllPayments = asyncHandler(
+    async (_req: Request, res: Response) => {
+        // if (!req.currentUser?.isAdmin) {
+        //   throw new CustomError("Admin access required", 403);
+        // }
+
+        const orders = await Order.find({}).sort({ createdAt: -1 });
+
+        res.status(200).send({ success: true, orders });
     }
+);
 
 
-    if (order.status === OrderStatus.Completed) {
-        return next(new CustomError("Cannot cancel a completed order", 400));
+export const cancelPayment = asyncHandler(
+    async (req: Request, res: Response) => {
+        const userId = getCurrentUserId(req);
+        const { orderId } = req.body;
+
+        const order = await findUserOrderOrThrow(orderId, userId);
+
+        if (order.status === OrderStatus.Cancelled) {
+            throw new CustomError("Order is already cancelled", 400);
+        }
+
+        if (order.status === OrderStatus.Completed) {
+            throw new CustomError("Cannot cancel a completed order", 400);
+        }
+
+        if (
+            order.status !== OrderStatus.AwaitingPayment &&
+            order.status !== OrderStatus.Created &&
+            order.status !== OrderStatus.Pending
+        ) {
+            throw new CustomError(
+                `Cannot cancel order in status: ${order.status}`,
+                400
+            );
+        }
+
+        order.status = OrderStatus.Cancelled;
+        await order.save();
+
+        const payment = await Payment.findOne({ orderId: order.id }).sort({
+            createdAt: -1,
+        });
+
+        await new PaymentFailedPublisher(natsWrapper.client).publish({
+            paymentId: payment ? payment.id : "unknown",
+            orderId: order.id,
+            userId: order.userId,
+            amount: order.price,
+        });
+
+        res.status(200).send({ success: true, order });
     }
+);
 
-    if (
-        order.status !== OrderStatus.AwaitingPayment &&
-        order.status !== OrderStatus.Created &&
-        order.status !== OrderStatus.Pending
-    ) {
-        throw new CustomError(`Cannot cancel order in status: ${order.status}`, 400);
+
+export const retryPayment = asyncHandler(
+    async (req: Request, res: Response) => {
+        const userId = getCurrentUserId(req);
+        const { orderId } = req.body;
+
+        const order = await findUserOrderOrThrow(orderId, userId);
+
+        if (
+            order.status !== OrderStatus.AwaitingPayment &&
+            order.status !== OrderStatus.Pending &&
+            order.status !== OrderStatus.Failed
+        ) {
+            throw new CustomError(
+                "Only awaiting, pending, or failed orders can be retried for payment",
+                400
+            );
+        }
+
+        const stripeId = generateStripeId();
+
+        const payment = Payment.build({
+            orderId: order.id,
+            stripeId,
+        });
+        await payment.save();
+
+        await new PaymentCreatedPublisher(natsWrapper.client).publish({
+            paymentId: payment.id,
+            orderId: payment.orderId,
+            userId: order.userId,
+            amount: order.price,
+
+        });
+
+        order.status = OrderStatus.Completed;
+        await order.save();
+
+        await new PaymentCompletedPublisher(natsWrapper.client).publish({
+            paymentId: payment.id,
+            orderId: order.id,
+            userId: order.userId,
+            amount: order.price,
+        });
+
+        res.status(200).send({ success: true, order });
     }
+);
 
 
-    order.status = OrderStatus.Cancelled;
-    await order.save();
+export const applyDiscount = asyncHandler(
+    async (req: Request, res: Response) => {
+        const userId = getCurrentUserId(req);
+        const { orderId, discountCode } = req.body;
 
-    res.status(200).send(order);
-}
+        const order = await findUserOrderOrThrow(orderId, userId);
 
-export const retryPayment = async (req: Request, res: Response, next: NextFunction) => {
+        if (
+            order.status !== OrderStatus.AwaitingPayment &&
+            order.status !== OrderStatus.Created
+        ) {
+            throw new CustomError(
+                "Discounts can only be applied to orders awaiting payment or created",
+                400
+            );
+        }
 
-    const userId = req.currentUser?.id;
-    const { orderId, paymentMethod } = req.body;
-    const order = await findUserOrderOrThrow(orderId, userId!);
-
-    if (
-        order.status !== OrderStatus.AwaitingPayment &&
-        order.status !== OrderStatus.Pending &&
-        order.status !== OrderStatus.Failed
-    ) {
-        throw new CustomError("Only awaiting, pending, or failed orders can be retried for payment", 400);
-
+        // TODO: validate discountCode and adjust order.price accordingly
+        // For now just echo back the order.
+        res.status(200).send({
+            success: true,
+            order,
+            appliedDiscountCode: discountCode ?? null,
+        });
     }
+);
 
-    order.status = OrderStatus.Completed;
-    await order.save();
 
-    res.status(200).send(order);
-}
+export const getPaymentDetails = asyncHandler(
+    async (req: Request, res: Response) => {
+        const userId = getCurrentUserId(req);
+        const { orderId } = req.params;
 
-export const applyDiscount = async (req: Request, res: Response, next: NextFunction) => {
+        const order = await findUserOrderOrThrow(orderId, userId);
 
-    const userId = req.currentUser?.id;
-    const { orderId, discountCode } = req.body;
-    const order = await findUserOrderOrThrow(orderId, userId!);
-
-    if (order.status !== OrderStatus.AwaitingPayment && order.status !== OrderStatus.Created) {
-        throw new CustomError("Discounts can only be applied to orders awaiting payment or created", 400);
+        res.status(200).send({
+            success: true,
+            paymentDetails: {
+                orderId: order.id,
+                amount: order.price,
+                status: order.status,
+                createdAt: order.createdAt,
+                updatedAt: order.updatedAt,
+            },
+        });
     }
-    res.status(200).send(order);
-}
+);
 
-export const getPaymentDetails = async (req: Request, res: Response, next: NextFunction) => {
 
-    const userId = req.currentUser?.id;
-    const { orderId } = req.params;
-    const order = await findUserOrderOrThrow(orderId, userId!);
-    res.status(200).send({
-        orderId: order.id,
-        amount: order.price,
-        status: order.status,
-        createdAt: order.createdAt,
-        updatedAt: order.updatedAt
+export const getAllOrders = asyncHandler(
+    async (_req: Request, res: Response) => {
+        // if (!req.currentUser?.isAdmin) {
+        //   throw new CustomError("Admin access required", 403);
+        // }
 
-    });
-}   
+        const orders = await Order.find({}).sort({ createdAt: -1 });
+
+        res.status(200).send({ success: true, orders });
+    }
+);
