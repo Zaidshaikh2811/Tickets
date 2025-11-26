@@ -6,11 +6,15 @@ import { createTicketRouter } from "./routes/new";
 import helmet from 'helmet';
 import compression from 'compression';
 import morgan from 'morgan';
+import cors from "cors";
 
 
 const app = Express();
 
-
+app.use(cors({
+    origin: "http://ticketing.local",
+    credentials: true,
+}))
 app.set("trust proxy", true);
 app.use(helmet());
 app.use(compression());

@@ -49,12 +49,7 @@ export const addTicket = async (req: Request, res: Response) => {
 
     await ticket.save();
 
-    // new TicketCreatedPublisher(natsWrapper.client).publish({
-    //     id: ticket.id,
-    //     title: ticket.title,
-    //     price: ticket.price,
-    //     userId: ticket.userId,
-    // });
+
 
 
 
@@ -178,7 +173,7 @@ export const deleteTicket = async (req: Request, res: Response) => {
 
 export const getParticularTicket = async (req: Request, res: Response) => {
 
-    const ticketId = req.params.id;
+    const ticketId = req.params.ticketId;
 
 
     ensureValidMongoId(ticketId);

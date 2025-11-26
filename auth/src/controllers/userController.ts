@@ -41,6 +41,7 @@ export const getCurrentUser = asyncHandler(async (req: Request, res: Response, n
 
 
 export const signup = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+    console.log("adsasdasdads");
 
     const { name, email, password } = req.body;
     const existingUser = await User.findOne({ email });
@@ -52,7 +53,7 @@ export const signup = asyncHandler(async (req: Request, res: Response, next: Nex
     const token = jwt.sign({ id: user.id, email: user.email }, process.env.JWT_KEY!);
     req.session = { jwt: token };
 
-    res.status(201).json({ success: true, message: "Sign-up successful", user: { name, email } });
+    res.status(201).json({ success: true, token, message: "Sign-up successful", user: { name, email } });
 
 });
 
@@ -70,7 +71,7 @@ export const signin = asyncHandler(async (req: Request, res: Response) => {
     const token = jwt.sign({ id: user.id, email: user.email }, process.env.JWT_KEY!);
     req.session = { jwt: token };
 
-    res.status(200).json({ success: true, user: { name: user.name, email: user.email } });
+    res.status(200).json({ success: true, token, user: { name: user.name, email: user.email } });
 
 });
 

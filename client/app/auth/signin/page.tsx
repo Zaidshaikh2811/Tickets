@@ -3,47 +3,39 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
+import { useAuth } from "@/app/context/AuthContext";
+import { apiFetch } from "@/lib/api";
 
 export default function SignInPage() {
     const router = useRouter();
-    const [error, setError] = useState<string>("");
+    const { login } = useAuth();
+    const [error, setError] = useState("");
     const [isPending, startTransition] = useTransition();
 
-    async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
-        e.preventDefault();
+    const handleSubmit = (formData: FormData) => {
         setError("");
 
-        const formData = new FormData(e.currentTarget);
-        const payload = {
-
-            email: formData.get("email"),
-            password: formData.get("password"),
-        };
-
         startTransition(async () => {
-            try {
-                const response = await fetch("/api/users/signin", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(payload),
-                });
+            const email = formData.get("email");
+            const password = formData.get("password");
 
-                const data = await response.json();
+            const { res, data } = await apiFetch("/api/users/signin", {
+                method: "POST",
+                body: JSON.stringify({ email, password }),
+            });
 
-                if (!response.ok) {
-                    throw new Error(data.message || "Sign in failed");
-                }
-
-                router.push("/");
-                router.refresh();
-            } catch (err) {
-                setError(err instanceof Error ? err.message : "Something went wrong");
+            if (!res.ok) {
+                setError(data?.message || "Invalid credentials");
+                return;
             }
+
+            login(data.user, data.token);
+            router.push("/tickets");
         });
-    }
+    };
 
     return (
-        <div className="flex min-h-screen items-center justify-center bg-gray-100">
+        <div className="flex min-h-screen items-center justify-center bg-gray-100 px-4">
             <div className="bg-white p-8 rounded-2xl shadow-lg w-full max-w-md">
                 <h2 className="text-3xl font-bold text-center text-indigo-700 mb-6">
                     Sign In
@@ -55,21 +47,19 @@ export default function SignInPage() {
                     </div>
                 )}
 
-                <form onSubmit={handleSubmit} className="space-y-5">
-
-
+                <form action={handleSubmit} className="space-y-5">
                     <div>
                         <label htmlFor="email" className="block text-sm font-medium text-gray-700">
                             Email
                         </label>
                         <input
                             id="email"
-                            type="email"
                             name="email"
-                            placeholder="you@example.com"
+                            type="email"
                             required
                             disabled={isPending}
-                            className="mt-1 w-full rounded-lg border border-gray-300 px-4 py-2 focus:ring-2 focus:ring-indigo-500 focus:outline-none disabled:opacity-50"
+                            className="mt-1 w-full rounded-lg border border-gray-300 px-4 py-2 
+                                       text-black focus:ring-2 focus:ring-indigo-500 disabled:opacity-50"
                         />
                     </div>
 
@@ -79,27 +69,28 @@ export default function SignInPage() {
                         </label>
                         <input
                             id="password"
-                            type="password"
                             name="password"
-                            placeholder="Enter your password"
+                            type="password"
                             required
                             disabled={isPending}
-                            className="mt-1 w-full rounded-lg border border-gray-300 px-4 py-2 focus:ring-2 focus:ring-indigo-500 focus:outline-none disabled:opacity-50"
+                            className="mt-1 w-full rounded-lg border border-gray-300 px-4 py-2
+                                       text-black focus:ring-2 focus:ring-indigo-500 disabled:opacity-50"
                         />
                     </div>
 
                     <button
                         type="submit"
                         disabled={isPending}
-                        className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-2 rounded-lg font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-2
+                                   rounded-lg font-semibold transition disabled:opacity-50"
                     >
                         {isPending ? "Signing In..." : "Sign In"}
                     </button>
                 </form>
 
                 <p className="text-center text-sm text-gray-600 mt-4">
-                    Don't have an account?{" "}
-                    <Link href="/auth/signup" className="text-indigo-600 hover:underline">
+                    Don&apos;t have an account?{" "}
+                    <Link href="/auth/signup" className="text-indigo-600 hover:underline font-medium">
                         Sign Up
                     </Link>
                 </p>

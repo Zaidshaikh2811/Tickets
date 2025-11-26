@@ -13,6 +13,7 @@ export enum TicketStatus {
     Created = 'created',
     Reserved = 'reserved',
     Expired = 'expired',
+    Completed = 'completed',
 }
 
 interface TicketDoc extends mongoose.Document {

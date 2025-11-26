@@ -1,7 +1,7 @@
 import Express from "express";
 import bodyParser from "body-parser";
 import usersRouter from "./routes/users";
-
+import cors from "cors";
 import cookieSession from "cookie-session";
 import { CustomError, errorHandler } from "@zspersonal/common";
 
@@ -10,7 +10,10 @@ import { CustomError, errorHandler } from "@zspersonal/common";
 
 const app = Express();
 
-
+app.use(cors({
+    origin: "http://ticketing.local",
+    credentials: true,
+}))
 app.set("trust proxy", true);
 app.use(bodyParser.json());
 app.use(cookieSession({
