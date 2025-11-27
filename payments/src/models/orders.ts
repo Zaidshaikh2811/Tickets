@@ -8,6 +8,7 @@ interface OrderAttrs {
     price: number;
     currency: string;
     status: OrderStatus;
+    ticketId: string;
 }
 
 const OrderSchema = new Schema({
@@ -23,6 +24,7 @@ const OrderSchema = new Schema({
         maxlength: 3,
     },
     status: { type: String, required: true, enum: Object.values(OrderStatus) },
+    ticketId: { type: String, required: true },
     version: { type: Number, default: 0 }
 }, {
     toJSON: {
@@ -50,6 +52,7 @@ interface OrderDoc extends mongoose.Document {
     createdAt: Date;
     updatedAt: Date;
     version: number;
+    ticketId: string;
 }
 
 OrderSchema.virtual('orderId').get(function () {
@@ -66,7 +69,8 @@ OrderSchema.statics.build = (attrs: OrderAttrs) => {
         userId: attrs.userId,
         price: attrs.price,
         currency: attrs.currency,
-        status: attrs.status
+        status: attrs.status,
+        ticketId: attrs.ticketId
     });
 };
 

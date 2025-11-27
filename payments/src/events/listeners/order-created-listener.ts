@@ -13,7 +13,8 @@ export class OrderCreatedListener extends Listener<OrderCreatedEvent> {
             userId: data.userId,
             price: data.ticket.price,
             currency: 'USD',
-            status: data.status
+            status: data.status,
+            ticketId: data.ticket.id,
         });
         await order.save();
         msg.ack();

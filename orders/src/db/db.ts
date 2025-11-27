@@ -3,6 +3,9 @@ import { natsWrapper } from '../nats-wrapper';
 import { TicketCreatedListener } from '../events/listeners/ticket-created-listener';
 import { TicketUpdatedListener } from '../events/listeners/ticket-updated-listener';
 import { ExpirationCompleteListener } from '../events/listeners/expiration-complete-listener';
+import { PaymentCompletedListener } from '../events/listeners/payment-completed-listener';
+import { PaymentCreatedListener } from '../events/listeners/paymet-created-listener';
+import { PaymentFailedListener } from '../events/listeners/Payment-failed-service';
 
 const config = {
     mongoURI: process.env.MONGO_URI || 'mongodb://orders-mongo-srv:27017/ordersdb',
@@ -74,6 +77,9 @@ export const connectToDatabase = async (): Promise<void> => {
         new TicketCreatedListener(natsWrapper.client).listen();
         new TicketUpdatedListener(natsWrapper.client).listen();
         new ExpirationCompleteListener(natsWrapper.client).listen();
+        new PaymentCompletedListener(natsWrapper.client).listen();
+        new PaymentCreatedListener(natsWrapper.client).listen();
+        new PaymentFailedListener(natsWrapper.client).listen();
 
     } catch (error) {
         console.error(' Initialization error:', error);

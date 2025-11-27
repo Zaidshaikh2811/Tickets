@@ -1,4 +1,6 @@
 import { OrderCreatedListener } from "./events/listeners/order-created-listener";
+import { PaymentCompletedListener } from "./events/listeners/Payment-completed-listener";
+import { PaymentFailedListener } from "./events/listeners/payment-failed-listener";
 import { natsWrapper } from "./nats-wrapper";
 import './queue/expiration-queue'
 
@@ -32,6 +34,8 @@ const start = async () => {
         process.on("SIGTERM", () => natsWrapper.client.close());
 
         new OrderCreatedListener(natsWrapper.client).listen();
+        new PaymentCompletedListener(natsWrapper.client).listen();
+        new PaymentFailedListener(natsWrapper.client).listen();
 
 
 

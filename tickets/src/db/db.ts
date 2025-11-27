@@ -2,9 +2,12 @@ import mongoose from "mongoose";
 import { natsWrapper } from "../nats-wrapper";
 import { OrderCreatedListener } from "../events/listener/order-created-listener";
 import { OrderCancelledListener } from "../events/listener/order-cancelled-listener";
+import { PaymentCreatedListener } from "../events/listener/payment-created-listener";
+import { PaymentFailedListener } from "../events/listener/payment-cancelled-listener";
+import { PaymentCompletedListener } from "../events/listener/payment-completed-listener";
 
 const config = {
-    mongoURI: process.env.MONGO_URI,
+    mongoURI: process.env.MONGO_URI!,
     nats: {
         clusterId: process.env.NATS_CLUSTER_ID!,
         clientId: process.env.NATS_CLIENT_ID!,
@@ -54,6 +57,9 @@ export const startServices = async () => {
 
         new OrderCreatedListener(natsWrapper.client).listen();
         new OrderCancelledListener(natsWrapper.client).listen();
+        new PaymentCompletedListener(natsWrapper.client).listen();
+        new PaymentCreatedListener(natsWrapper.client).listen();
+        new PaymentFailedListener(natsWrapper.client).listen();
 
 
         await mongoose.connect(config.mongoURI);

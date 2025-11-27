@@ -96,11 +96,16 @@ export const paymentComplete = asyncHandler(
         order.status = OrderStatus.Completed;
         await order.save();
 
+        console.log("Sending Payment COmplete");
+        console.log("Sending Payment COmplete", { ticketId: order.ticketId });
+
+
         await new PaymentCompletedPublisher(natsWrapper.client).publish({
             paymentId: payment.id,
             orderId: order.id,
             userId: order.userId,
             amount: order.price,
+            ticketId: order.ticketId,
         });
 
         res.status(200).send({ success: true, order });
@@ -275,6 +280,7 @@ export const retryPayment = asyncHandler(
             orderId: order.id,
             userId: order.userId,
             amount: order.price,
+            ticketId: order.ticketId,
         });
 
         res.status(200).send({ success: true, order });

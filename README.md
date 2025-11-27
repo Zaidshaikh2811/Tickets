@@ -1,211 +1,218 @@
-# 🎟️ Tickets — Microservices Example
 
-A clean, beginner-friendly **Node.js + TypeScript microservices** example featuring:
 
-* **Auth**
-* **Tickets**
-* **Orders**
-* **Payments**
-* **Client (frontend)**
-* **NATS Streaming** for event-based communication
-* **Kubernetes + Skaffold** for local development
+#  Tickets — Microservices 
 
-This README keeps everything simple: how the system works, how to run it locally, how to run tests, and how to use Docker/K8s.
+### *Event-Driven Microservices with Node.js, TypeScript, NATS, Kubernetes & Next.js*
+
+<p align="center">
+  <a href="#"><img src="https://img.shields.io/badge/Node.js-18.x-43853D?style=for-the-badge&logo=node.js&logoColor=white"/></a>
+  <a href="#"><img src="https://img.shields.io/badge/TypeScript-Microservices-3178C6?style=for-the-badge&logo=typescript&logoColor=white"/></a>
+  <a href="#"><img src="https://img.shields.io/badge/NATS-Event%20Bus-1997B5?style=for-the-badge&logo=natsdotio&logoColor=white"/></a>
+  <a href="#"><img src="https://img.shields.io/badge/Kubernetes-Local%20Dev-326CE5?style=for-the-badge&logo=kubernetes&logoColor=white"/></a>
+  <a href="#"><img src="https://img.shields.io/badge/Skaffold-Auto%20Builds-1A73E8?style=for-the-badge&logo=google-cloud&logoColor=white"/></a>
+  <a href="#"><img src="https://img.shields.io/badge/Next.js-Frontend-000000?style=for-the-badge&logo=next.js&logoColor=white"/></a>
+  <a href="#"><img src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge"/></a>
+</p>
+
+<p align="center">
+  A clean, production-style microservices architecture for learning **distributed systems**,  
+  **event-driven design**, **NATS Streaming**, and **Kubernetes development workflows**.
+</p>
 
 ---
 
-## 🧩 System Overview
+#  **Tech Stack**
 
-A quick visual diagram so contributors instantly understand the flow:
+<p align="center">
+  <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/nodejs/nodejs-original.svg" width="55" />&nbsp;&nbsp;
+  <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/typescript/typescript-original.svg" width="55" />&nbsp;&nbsp;
+  <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/kubernetes/kubernetes-plain.svg" width="55" />&nbsp;&nbsp;
+  <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/mongodb/mongodb-original.svg" width="55" />&nbsp;&nbsp;
+  <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/nextjs/nextjs-original.svg" width="55" />&nbsp;&nbsp;
+</p>
+
+---
+
+#  **Services Included**
+
+```
+.
+├── auth/        → JWT authentication
+├── tickets/     → Ticket creation & management
+├── orders/      → Ticket reservation workflow
+├── payments/    → Payment confirmation workflow
+├── client/      → Next.js frontend
+├── common/      → Shared utilities & event definitions
+├── nats/        → Examples + test utilities
+├── infra/       → Kubernetes manifests + Skaffold
+└── diagrams/    → Architecture & flow diagrams
+```
+
+---
+
+#  **Service-to-Service Flow (Click to Expand)**
+
+<details>
+<summary><strong>View System Flow</strong></summary>
+
+###  **High-Level Service Flow**
 
 ```mermaid
-flowchart LR
-    Client[Client App] -->|HTTP| Auth
-    Client -->|HTTP| Tickets
-    Client -->|HTTP| Orders
-    Client -->|HTTP| Payments
+flowchart TD
+  User --> Browser
+  Browser -->|HTTP Request| Ingress
 
-    Tickets -->|Publishes Events| NATS
-    Orders -->|Publishes/Consumes Events| NATS
-    Payments -->|Publishes Events| NATS
-    Auth -->|Optional Events| NATS
+  Ingress --> Auth
+  Ingress --> Tickets
+  Ingress --> Orders
+  Ingress --> Payments
 
-    NATS -. distributes events .-> Tickets
-    NATS -. distributes events .-> Orders
-    NATS -. distributes events .-> Payments
+  Tickets -->|publish: TicketCreated| NATS
+  NATS --> Orders
+  Orders -->|publish: OrderCreated| NATS
+  NATS --> Payments
+  Payments -->|publish: PaymentCompleted| NATS
+  NATS --> Orders
+  NATS --> Tickets
+
+  subgraph DBs
+    A[(Auth DB)]
+    T[(Tickets DB)]
+    O[(Orders DB)]
+    P[(Payments DB)]
+  end
+
+  Auth --> A
+  Tickets --> T
+  Orders --> O
+  Payments --> P
 ```
 
-Each service has its own DB, runs independently, and communicates via NATS events.
+**Flow Summary:**
+
+* User creates a ticket → `TicketCreated` event published
+* Orders service listens → creates order → emits `OrderCreated`
+* Payments service listens → processes payment → emits `PaymentCompleted`
+* Tickets & Orders update state accordingly
+* Entire system stays **eventually consistent**
+
+</details>
 
 ---
 
-## 📁 What’s Included
+#  **Sequence Diagram — How Events Work**
 
-```
-auth/       → authentication service
-tickets/    → ticket creation & management
-orders/     → order placement, reservation, expiration
-payments/   → simple payment mock service
-client/     → frontend (React/Next/Vite etc.)
-nats/       → publisher/subscriber examples
-common/     → shared types & helpers
-infra/k8s/  → Kubernetes manifests
-diagrams/   → Mermaid diagrams
-```
+```mermaid
+sequenceDiagram
+    participant C as Client (Browser)
+    participant I as Ingress Controller
+    participant T as Tickets Service
+    participant N as NATS Streaming
+    participant O as Orders Service
+    participant P as Payments Service
 
-All services use their own `package.json`, `tsconfig.json`, and (when needed) `Dockerfile`.
+    C->>I: HTTP POST /api/tickets
+    I->>T: Forward request to Tickets
+    T->>T: Create ticket in DB
+    T->>N: Publish TicketCreated event
+
+    N->>O: Deliver TicketCreated
+    O->>O: Create Order
+    O->>N: Publish OrderCreated
+
+    N->>P: Deliver OrderCreated
+    P->>P: Process payment
+    P->>N: Publish PaymentCompleted
+
+    N->>O: Deliver PaymentCompleted
+    O->>O: Mark Order complete
+
+    N->>T: Deliver PaymentCompleted
+    T->>T: Mark ticket as reserved/sold
+```
 
 ---
 
-## 🛠️ Prerequisites
+#  **Quick Start**
 
-You only need:
+### 1️ Start Infra
 
-* Node.js **18+**
-* npm / pnpm
-* Docker (optional but recommended)
-* kubectl + Skaffold (for K8s workflow)
-
----
-
-# 🚀 Quick Start — Local Development
-
-### 1️⃣ Start infrastructure (MongoDB + NATS)
-
-```powershell
+```bash
 docker run --rm -p 4222:4222 -p 8222:8222 nats:2.10.0
 docker run --rm -p 27017:27017 mongo:latest
 ```
 
-### 2️⃣ Start any service (example: Auth)
+### 2️ Run a service
 
-```powershell
+```bash
 cd auth
 npm install
 npm run dev
 ```
 
-Repeat the same for:
+---
 
-```
-tickets/
-orders/
-payments/
-client/
-```
+#  **Docker**
 
-Client usually launches on port **3000**.
+```bash
+cd tickets
+docker build -t tickets-tickets:local .
+docker run --rm -p 3000:3000 tickets-tickets:local
+```
 
 ---
 
-# 🐳 Docker — Running a Single Service
+#  **Kubernetes + Skaffold**
 
-Example: run the **Auth** service in Docker.
-
-```powershell
-cd auth
-docker build -t tickets-auth:local .
-docker run --rm -p 3000:3000 tickets-auth:local
-```
-
-You can create a `docker-compose.yml` later to run multiple services together — just tell me and I’ll generate it.
-
----
-
-# ☸️ Kubernetes + Skaffold (for local microservices dev)
-
-To use the full multi-service setup:
-
-```powershell
+```bash
 skaffold dev
 ```
 
-Skaffold will:
+* Auto rebuild
+* Auto deploy
+* Auto sync changes
 
-* build all images
-* apply Kubernetes manifests from `infra/k8s/`
-* auto-rebuild when you change code
-
-To only build:
-
-```powershell
-skaffold build
-```
+Default host: **ticketforge.local**
 
 ---
 
-# 🔐 Environment Variables
+#  **Environment Variables**
 
-Each service needs its own `.env`.
-
-### Example for `auth/.env`
+Example:
 
 ```
 PORT=3000
-JWT_KEY=super-secret
+JWT_KEY=your_jwt_secret
 MONGO_URI=mongodb://localhost:27017/authdb
 NATS_URL=nats://localhost:4222
-NATS_CLUSTER_ID=test-cluster
-NATS_CLIENT_ID=auth-service
 ```
-
-### Example for `client/.env`
-
-```
-VITE_API_URL=http://localhost:3000
-```
-
-👉 Add `.env.example` files without secrets so contributors know required keys.
 
 ---
 
-# 🧪 Running Tests
+#  **Testing**
 
-Example (run inside any service folder):
-
-```powershell
-npm install
+```bash
 npm test
 ```
 
-The **tickets** service uses `mongodb-memory-server` and Jest for isolated in-memory tests.
+Uses:
+
+* Jest
+* Supertest
+* `mongodb-memory-server`
+
 
 ---
 
-# 📦 Project Structure (Simple View)
+#  **Contributing**
 
-```
-.
-├── auth/
-├── tickets/
-├── orders/
-├── payments/
-├── client/
-├── nats/
-├── common/
-├── infra/
-└── diagrams/
-```
+* Fork → Branch → Commit → PR
+* Add tests for each change
+* Update `.env.example` when new config is added
 
 ---
 
-# 🤝 Contributing
+#  **License**
 
-1. Create a branch
-   `git checkout -b feat/your-feature`
-
-2. Run & test the specific service you modify
-
-3. Add tests + update `.env.example`
-
-4. Open a PR with a clean description
-
----
-
-# 📄 License
-
-MIT License 
-
----
-
+MIT License
 
