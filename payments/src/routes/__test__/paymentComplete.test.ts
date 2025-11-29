@@ -55,5 +55,5 @@ it("completes payment for a valid order", async () => {
         .send({ orderId: order.id, paymentMethod: "paypal" })
         .expect(200);
 
-    expect(res.body.status).toBe(OrderStatus.Completed);
+    expect(res.body.order.status).toBe(OrderStatus.Completed);
 });

@@ -14,6 +14,9 @@ it("cancels awaiting payment", async () => {
         .set("Cookie", cookie)
         .send({ orderId: order.id })
         .expect(200);
+    console.log(res.body);
+    console.log(OrderStatus.Cancelled);
 
-    expect(res.body.status).toBe(OrderStatus.Cancelled);
+
+    expect(res.body.order.status).toBe(OrderStatus.Cancelled);
 });

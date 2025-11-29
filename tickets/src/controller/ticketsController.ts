@@ -83,13 +83,20 @@ export const getTickets = async (req: Request, res: Response) => {
         const pageNum = Math.max(1, parseInt(page as string, 10) || 1);
         const limitNum = Math.max(1, parseInt(limit as string, 10) || 10);
 
-        const tickets = await Ticket.find()
+        console.log(page);
+
+
+        const tickets = await Ticket.find({
+            orderId: { $exists: false }
+        })
             .sort({ createdAt: -1 })
             .skip((pageNum - 1) * limitNum)
             .limit(limitNum)
             .lean();
         res.status(200).json({ success: true, count: tickets.length, data: tickets });
     } catch (err) {
+        console.log(err);
+
         throw new CustomError("Internal Server Error", 500);
     }
 }
@@ -173,10 +180,12 @@ export const deleteTicket = async (req: Request, res: Response) => {
 
 export const getParticularTicket = async (req: Request, res: Response) => {
 
+    console.log("req.params.ticketId", req.params.ticketId);
     const ticketId = req.params.ticketId;
 
 
     ensureValidMongoId(ticketId);
+
 
     const ticket = await Ticket.findById(ticketId).lean();
     if (!ticket) {

@@ -7,7 +7,17 @@ export async function fetchTicket(ticketId: string) {
 }
 
 
-export async function BookTicket(orderId: string, paymentMethod: string) {
+export async function createOrder(ticketId: string) {
+    return await apiFetch(`/api/orders/${ticketId}`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+        },
+    });
+}
+
+
+export async function makePayment(orderId: string, paymentMethod: string) {
     return await apiFetch(`/api/payments`, {
         method: "POST",
         headers: {
@@ -15,7 +25,7 @@ export async function BookTicket(orderId: string, paymentMethod: string) {
         },
         body: JSON.stringify({
             orderId,
-            paymentMethod,
+            paymentMethod
         }),
     });
 }

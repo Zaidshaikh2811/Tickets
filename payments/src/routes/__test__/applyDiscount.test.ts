@@ -13,9 +13,6 @@ it("allows discount on valid order", async () => {
         .set("Cookie", cookie)
         .send({ orderId: order.id, discountCode: "SAVE10" })
         .expect(200);
-    console.log("Order:", res.body);
-    console.log("Order:", order);
 
-
-    expect(res.body.orderId).toBe(order.orderId);
+    expect(res.body.order.orderId).toBe(order.orderId);
 });

@@ -8,6 +8,7 @@ export const createOrder = async (userId: string, status = OrderStatus.AwaitingP
         userId,
         price: 500,
         currency: "INR",
-        status
+        status,
+        ticketId: new mongoose.Types.ObjectId().toHexString(),
     }).save();
 };

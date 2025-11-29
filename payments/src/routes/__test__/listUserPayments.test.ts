@@ -16,5 +16,7 @@ it("returns only the current user's payments", async () => {
         .set("Cookie", cookie)
         .expect(200);
 
+
+
     expect(res.body.length).toBe(1);
 });

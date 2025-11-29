@@ -29,28 +29,28 @@ export class TicketCreatedListener extends Listener<TicketCreatedEvent> {
         await ticket.save();
 
 
-        const expiration = new Date();
-        expiration.setUTCMinutes(expiration.getUTCMinutes() + 1);
+        // const expiration = new Date();
+        // expiration.setUTCMinutes(expiration.getUTCMinutes() + 1);
 
-        const order = Order.build({
-            userId,
-            status: OrderStatus.Created,
-            expiresAt: expiration,
-            ticket
-        });
-        await order.save();
+        // const order = Order.build({
+        //     userId,
+        //     status: OrderStatus.Created,
+        //     expiresAt: expiration,
+        //     ticket
+        // });
+        // await order.save();
 
-        await new OrderCreatedPublisher(this.client).publish({
-            id: order.id,
-            userId: order.userId,
-            status: order.status,
-            ticket: {
-                id: ticket.id,
-                price: ticket.price
-            },
-            expiresAt: expiration.toISOString(),
-            version: order.version
-        });
+        // await new OrderCreatedPublisher(this.client).publish({
+        //     id: order.id,
+        //     userId: order.userId,
+        //     status: order.status,
+        //     ticket: {
+        //         id: ticket.id,
+        //         price: ticket.price
+        //     },
+        //     expiresAt: expiration.toISOString(),
+        //     version: order.version
+        // });
 
 
         msg.ack();

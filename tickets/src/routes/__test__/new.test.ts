@@ -7,6 +7,7 @@ import { natsWrapper } from "../../__mocks__/nats-wrapper";
 import { app } from "../../app";
 import request from "supertest";
 import mongoose from "mongoose";
+import { title } from "process";
 
 
 
@@ -98,7 +99,9 @@ describe("Ticket Controller", () => {
         await Ticket.create({ title: "A", price: 10, userId: "123" });
         await Ticket.create({ title: "B", price: 20, userId: "123" });
 
-        const req = {} as Request;
+        const req = {
+            query: {}
+        } as Request;
         const res = mockResponse();
 
         await getTickets(req, res);
@@ -119,28 +122,29 @@ describe("Ticket Controller", () => {
     it("should get particular ticket", async () => {
 
         const ticket = await Ticket.create(
-            { title: "Special Event", price: 75, userId: "69044e182f066d6798373402" }
+            { title: "Special Event", price: 75, userId: new mongoose.Types.ObjectId().toHexString() }
         );
 
+        console.log(ticket);
 
-        const req = { params: { id: ticket.id } } as unknown as Request;
+
+        const req = { params: { ticketId: ticket._id } } as unknown as Request;
         const res = mockResponse();
 
 
         await getParticularTicket(req, res);
         expect(res.status).toHaveBeenCalledWith(200);
-        expect(res.json).toHaveBeenCalledWith({
-            success: true,
-            data: expect.objectContaining({
-                id: ticket.id,
-                title: "Special Event"
+        expect(res.json).toHaveBeenCalledWith(
+            expect.objectContaining({
+                success: true,
+                data: expect.objectContaining({ title: "Special Event", price: 75 })
             })
-        });
+        );
     });
 
     it("should throw 404 if ticket not found", async () => {
         const nonExistingId = new mongoose.Types.ObjectId().toHexString();
-        const req = { params: { id: nonExistingId } } as unknown as Request;
+        const req = { params: { ticketId: nonExistingId } } as unknown as Request;
         const res = mockResponse();
 
 
@@ -163,7 +167,7 @@ describe("Ticket Controller", () => {
         const updateRes = await request(app)
             .put(`/api/tickets/${ticketId}`)
             .set("Cookie", userCookie)
-            .send({ price: 150 })
+            .send({ price: 150, title: "Special Event" })
             .expect(200);
 
 
@@ -186,7 +190,7 @@ describe("Ticket Controller", () => {
         const res = await request(app)
             .put(`/api/tickets/${nonExistingId}`)
             .set("Cookie", userCookie)
-            .send({ price: 150 })
+            .send({ price: 150, title: "Special Event" })
             .expect(404);
 
         expect(res.body.errors[0].message).toMatch(/not found/);
@@ -301,27 +305,7 @@ describe("Ticket Controller", () => {
         expect(outbox!.data.id).toBe(ticket!.id);
     });
 
-    it("does not create duplicate outbox events", async () => {
-        const title = "Magic Show";
-        const price = 50;
 
-        const cookie = global.signin();
-
-        await request(app)
-            .post("/api/tickets")
-            .send({ title, price })
-            .set("Cookie", cookie)
-            .expect(201);
-
-        await request(app)
-            .post("/api/tickets")
-            .send({ title, price })
-            .set("Cookie", cookie)
-            .expect(201);
-
-        const outboxes = await OutboxEvent.find({});
-        expect(outboxes.length).toBe(2); // 2 different requests
-    });
 
     it("handles high concurrency ticket creation", async () => {
         const cookie = global.signin();

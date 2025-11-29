@@ -96,8 +96,7 @@ export const paymentComplete = asyncHandler(
         order.status = OrderStatus.Completed;
         await order.save();
 
-        console.log("Sending Payment COmplete");
-        console.log("Sending Payment COmplete", { ticketId: order.ticketId });
+
 
 
         await new PaymentCompletedPublisher(natsWrapper.client).publish({
@@ -171,6 +170,7 @@ export const refundPayment = asyncHandler(
 
 export const listUserPayments = asyncHandler(
     async (req: Request, res: Response) => {
+
         const userId = getCurrentUserId(req);
 
         const orders = await Order.find({ userId }).sort({ createdAt: -1 });

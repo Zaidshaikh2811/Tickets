@@ -15,5 +15,8 @@ it("retries pending order", async () => {
         .send({ orderId: order.id, paymentMethod: "stripe" })
         .expect(200);
 
-    expect(res.body.status).toBe(OrderStatus.Completed);
-});
+    console.log(res.body);
+
+
+    expect(res.body.order.status).toBe(OrderStatus.Completed);
+})
