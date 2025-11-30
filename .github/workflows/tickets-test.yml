@@ -1,0 +1,51 @@
+name: Tickets Service CI
+
+on:
+  push:
+    paths:
+      - "tickets/**"
+  pull_request:
+    paths:
+      - "tickets/**"
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      mongo:
+        image: mongo:6
+        ports: ["27017:27017"]
+      redis:
+        image: redis:alpine
+        ports: ["6379:6379"]
+      nats:
+        image: nats-streaming:0.24.6
+        ports: ["4222:4222", "8222:8222"]
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install
+        working-directory: tickets
+        run: |
+          if [ -f package-lock.json ]; then npm ci; else npm install; fi
+
+      - name: Test
+        working-directory: tickets
+        env:
+          MONGO_URI: mongodb://localhost:27017/test-db
+          REDIS_HOST: localhost
+          REDIS_PORT: 6379
+          NATS_URL: nats://localhost:4222
+          NATS_CLUSTER_ID: ticketing
+          NATS_CLIENT_ID: ci-tickets
+        run: npm test -- --runInBand
+
+      - name: Build
+        working-directory: tickets
+        run: npm run build
