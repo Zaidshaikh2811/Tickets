@@ -7,7 +7,6 @@ export const connectToDatabase = async () => {
     if (!process.env.JWT_KEY) {
         throw new Error('JWT_KEY must be defined in environment variables');
     }
-
     try {
         await mongoose.connect(mongoURI);
         console.log('MongoDB connected successfully');
