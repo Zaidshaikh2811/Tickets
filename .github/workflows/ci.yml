@@ -1,24 +1,56 @@
-name: CI
+name: Monorepo CI
 
 on:
   push:
     branches: ["main"]
   pull_request:
     branches: ["main"]
+  workflow_dispatch:
 
 jobs:
-  build-and-test:
+  discover-services:
     runs-on: ubuntu-latest
+    outputs:
+      services: ${{ steps.set-services.outputs.services }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Detect services (folders with package.json)
+        id: set-services
+        run: |
+          echo "Scanning for services..."
+          SERVICES=()
+          for dir in */; do
+            if [ -f "$dir/package.json" ]; then
+              SERVICES+=("\"${dir%/}\"")
+            fi
+          done
+
+          JSON="[$(IFS=,; echo "${SERVICES[*]}")]"
+          echo "services=$JSON" >> "$GITHUB_OUTPUT"
+          echo "Detected services: $JSON"
+
+  test-and-build:
+    needs: discover-services
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        service: ${{ fromJson(needs.discover-services.outputs.services) }}
 
     services:
       mongo:
         image: mongo:6
         ports:
           - 27017:27017
+
       redis:
         image: redis:alpine
         ports:
           - 6379:6379
+
       nats:
         image: nats-streaming:0.24.6
         ports:
@@ -29,26 +61,56 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: Use Node.js
+      - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 20
+          cache: "npm"
+
+      - name: Show target service
+        run: echo "Running CI for service: ${{ matrix.service }}"
 
       - name: Install dependencies
-        run: npm ci
+        working-directory: ${{ matrix.service }}
+        run: |
+          if [ -f package-lock.json ]; then
+            npm ci
+          else
+            echo "⚠ No lockfile found in $PWD — using npm install"
+            npm install
+          fi
 
       - name: TypeScript check
-        run: npm run typecheck
+        working-directory: ${{ matrix.service }}
+        run: |
+          if npm run | grep -q "typecheck"; then
+            npm run typecheck
+          else
+            echo "No typecheck script — skipping"
+          fi
 
-      - name: Run Jest tests
+      - name: Run Tests
+        working-directory: ${{ matrix.service }}
         env:
           MONGO_URI: mongodb://localhost:27017/test-db
           REDIS_HOST: localhost
           REDIS_PORT: 6379
           NATS_URL: nats://localhost:4222
           NATS_CLUSTER_ID: ticketing
-          NATS_CLIENT_ID: ci-test-client
-        run: npm test -- --runInBand
+          NATS_CLIENT_ID: ci-${{ matrix.service }}
+          CI: true
+        run: |
+          if npm run | grep -q "test"; then
+            npm test -- --runInBand
+          else
+            echo "No test script — skipping"
+          fi
 
-      - name: Build project
-        run: npm run build
+      - name: Build service
+        working-directory: ${{ matrix.service }}
+        run: |
+          if npm run | grep -q "build"; then
+            npm run build
+          else
+            echo "No build script — skipping"
+          fi
