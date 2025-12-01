@@ -6,7 +6,8 @@
   "scripts": {
     "start": "tsx src/index.ts",
     "dev": "tsx watch src/index.ts",
-    "typecheck": "tsc --noEmit", "test": "jest --runInBand --no-cache",
+    "typecheck": "tsc --noEmit", 
+    "test": "jest --runInBand --no-cache",
  "build": "tsc"
   },
   "jest": {
