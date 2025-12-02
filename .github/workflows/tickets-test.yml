@@ -44,7 +44,7 @@ jobs:
           NATS_URL: nats://localhost:4222
           NATS_CLUSTER_ID: ticketing
           NATS_CLIENT_ID: ci-tickets
-        run: npm test -- --runInBand
+        run: npm test 
 
       - name: Build
         working-directory: tickets

@@ -36,7 +36,7 @@ jobs:
           NATS_URL: nats://localhost:4222
           NATS_CLUSTER_ID: ticketing
           NATS_CLIENT_ID: ci-payments
-        run: npm test -- --runInBand
+        run: npm test  
       - name: Build
         working-directory: payments
         run: npm run build

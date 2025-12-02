@@ -7,8 +7,6 @@ import cookieSession from "cookie-session";
 import { CustomError, errorHandler, getCurrentUser } from "@zspersonal/common";
 import { orderRouter } from "./routes/order_route";
 
-
-
 const app = Express();
 
 

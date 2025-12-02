@@ -8,7 +8,6 @@ import compression from 'compression';
 import morgan from 'morgan';
 import cors from "cors";
 
-
 const app = Express();
 
 app.use(cors({

@@ -51,7 +51,7 @@ jobs:
           NATS_CLUSTER_ID: ticketing
           NATS_CLIENT_ID: ci-auth
           CI: true
-        run: npm test -- --runInBand
+        run: npm test  
 
       - name: Build
         working-directory: auth

@@ -39,9 +39,6 @@ app.use((req, res, next) => {
 app.use("/api/payments", paymentRouter);
 
 
-
-
-
 app.use((req, res, next) => {
     next(new CustomError(`Route ${req.originalUrl} not found`, 404));
 });
