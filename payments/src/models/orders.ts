@@ -30,8 +30,8 @@ const OrderSchema = new Schema({
     toJSON: {
         virtuals: true,
         transform(doc: any, ret: any) {
-            ret.id = ret.id;
-            ret.orderId = ret._id;
+            ret.id = ret._id;      // send _id as id
+            ret.orderId = ret._id; // send _id also as orderId
             delete ret._id;
             delete ret.__v;
         }
@@ -40,7 +40,6 @@ const OrderSchema = new Schema({
     optimisticConcurrency: true,
     versionKey: 'version'
 });
-
 
 interface OrderDoc extends mongoose.Document {
     id: string;
@@ -55,14 +54,6 @@ interface OrderDoc extends mongoose.Document {
     ticketId: string;
 }
 
-OrderSchema.virtual('orderId').get(function () {
-    return this._id;
-});
-
-interface OrderModel extends mongoose.Model<OrderDoc> {
-    build(attrs: OrderAttrs): OrderDoc;
-}
-
 OrderSchema.statics.build = (attrs: OrderAttrs) => {
     return new Order({
         _id: attrs.orderId,
@@ -74,7 +65,9 @@ OrderSchema.statics.build = (attrs: OrderAttrs) => {
     });
 };
 
-
+interface OrderModel extends mongoose.Model<OrderDoc> {
+    build(attrs: OrderAttrs): OrderDoc;
+}
 
 const Order = mongoose.model<OrderDoc, OrderModel>('Order', OrderSchema);
 

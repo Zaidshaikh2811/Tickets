@@ -12,8 +12,7 @@ it("returns payment details", async () => {
         .get(`/api/payments/${order.id}/details`)
         .set("Cookie", cookie)
         .expect(200);
-    console.log(res.body);
-    console.log(order.id);
+
 
 
     expect(res.body.paymentDetails.orderId).toBe(order.id);

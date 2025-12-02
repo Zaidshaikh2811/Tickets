@@ -2,8 +2,11 @@ import { Order } from "../models/orders";
 import mongoose from "mongoose";
 import { OrderStatus } from "@zspersonal/common";
 
-export const createOrder = async (userId: string, status = OrderStatus.AwaitingPayment) => {
-    return Order.build({
+export const createOrder = async (
+    userId: string,
+    status: OrderStatus = OrderStatus.AwaitingPayment
+) => {
+    const order = await Order.build({
         orderId: new mongoose.Types.ObjectId().toHexString(),
         userId,
         price: 500,
@@ -11,4 +14,6 @@ export const createOrder = async (userId: string, status = OrderStatus.AwaitingP
         status,
         ticketId: new mongoose.Types.ObjectId().toHexString(),
     }).save();
+
+    return order; // REAL mongoose document
 };

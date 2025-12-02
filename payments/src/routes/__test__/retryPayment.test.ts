@@ -4,6 +4,7 @@ import { createOrder } from "../../test/createOrder";
 import { OrderStatus } from "@zspersonal/common";
 
 it("retries pending order", async () => {
+
     const userId = "u123";
     const cookie = global.signin(userId);
 
@@ -15,7 +16,7 @@ it("retries pending order", async () => {
         .send({ orderId: order.id, paymentMethod: "stripe" })
         .expect(200);
 
-    console.log(res.body);
+
 
 
     expect(res.body.order.status).toBe(OrderStatus.Completed);

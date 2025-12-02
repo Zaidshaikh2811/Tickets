@@ -16,83 +16,79 @@ import {
 
 const router = express.Router();
 
+router.use((req, res, next) => {
+    console.log("➡️ Entered /api/payments router:", req.method, req.path);
+    next();
+});
 
-router.get("/get-all-orders",
-    requireAuth,
-    getAllOrders);
 
-router.post("/",
+router.get("/get-all-orders", requireAuth, getAllOrders);
+
+router.post(
+    "/",
     requireAuth,
     [
-        body("orderId")
-            .not().isEmpty()
-            .withMessage("OrderId must be provided"),
+        body("orderId").not().isEmpty().withMessage("OrderId must be provided"),
         body("paymentMethod")
             .isIn(["credit_card", "paypal", "stripe"])
-            .withMessage("Payment method must be one of: credit_card, paypal, stripe")
-    ],
-    validateRequest, paymentComplete);
-
-
-router.get("/:orderId/status",
-    requireAuth,
-    [param("orderId").not().isEmpty().withMessage("orderId param is required")],
-    validateRequest,
-    getPaymentStatus);
-
-router.post("/refund",
-    requireAuth,
-    [
-        body("orderId")
-            .not().isEmpty()
-            .withMessage("OrderId must be provided")
+            .withMessage("Invalid payment method"),
     ],
     validateRequest,
-    refundPayment);
+    paymentComplete
+);
 
-router.get("/user/payments",
+
+router.post(
+    "/refund",
     requireAuth,
-    listUserPayments);
-
-
-router.post("/cancel",
-    requireAuth,
-    [
-        body("orderId")
-            .not().isEmpty()
-            .withMessage("OrderId must be provided")
-    ],
+    [body("orderId").not().isEmpty().withMessage("OrderId must be provided")],
     validateRequest,
-    cancelPayment);
+    refundPayment
+);
 
-router.post("/retry",
+router.get("/user/payments", requireAuth, listUserPayments);
+
+router.post(
+    "/cancel",
     requireAuth,
-    [
-        body("orderId")
-            .not().isEmpty()
-            .withMessage("OrderId must be provided"),
-    ],
+    [body("orderId").not().isEmpty().withMessage("OrderId must be provided")],
     validateRequest,
-    retryPayment);
+    cancelPayment
+);
 
-router.post("/apply-discount",
+router.post(
+    "/retry",
     requireAuth,
-    [
-        body("orderId")
-            .not().isEmpty()
-            .withMessage("OrderId must be provided"),
-    ],
+    [body("orderId").not().isEmpty().withMessage("OrderId must be provided")],
     validateRequest,
-    applyDiscount);
+    retryPayment
+);
 
-router.get("/:orderId/details",
+router.post(
+    "/apply-discount",
     requireAuth,
-    [param("orderId").not().isEmpty().withMessage("orderId param is required")],
+    [body("orderId").not().isEmpty().withMessage("OrderId must be provided")],
     validateRequest,
-    getPaymentDetails);
+    applyDiscount
+);
 
+router.get("/user-payments", requireAuth, listUserPayments);
 
+// Dynamic routes LAST
+router.get(
+    "/:orderId/status",
+    requireAuth,
+    [param("orderId").not().isEmpty().withMessage("orderId is required")],
+    validateRequest,
+    getPaymentStatus
+);
 
-
+router.get(
+    "/:orderId/details",
+    requireAuth,
+    [param("orderId").not().isEmpty().withMessage("orderId is required")],
+    validateRequest,
+    getPaymentDetails
+);
 
 export { router as paymentRouter };

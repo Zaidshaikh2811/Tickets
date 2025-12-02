@@ -125,7 +125,6 @@ describe("Ticket Controller", () => {
             { title: "Special Event", price: 75, userId: new mongoose.Types.ObjectId().toHexString() }
         );
 
-        console.log(ticket);
 
 
         const req = { params: { ticketId: ticket._id } } as unknown as Request;

@@ -83,7 +83,7 @@ export const getTickets = async (req: Request, res: Response) => {
         const pageNum = Math.max(1, parseInt(page as string, 10) || 1);
         const limitNum = Math.max(1, parseInt(limit as string, 10) || 10);
 
-        console.log(page);
+
 
 
         const tickets = await Ticket.find({

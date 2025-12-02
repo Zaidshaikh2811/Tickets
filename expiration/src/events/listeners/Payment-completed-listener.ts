@@ -6,8 +6,7 @@ export class PaymentCompletedListener extends Listener<PaymentCompletedEvent> {
     subject: Subjects.PaymentCompleted = Subjects.PaymentCompleted;
     queueGroupName = queueGroupName;
     async onMessage(data: PaymentCompletedEvent["data"], msg: any) {
-        console.log("Payment Completed Event Data:", data);
-        console.log("Removing expiration job for orderId:", data.orderId);
+
         const job = await expirationQueue.getJob(data.orderId);
 
         if (job) {

@@ -11,7 +11,6 @@ export async function signUpAction(formData: FormData) {
     }
 
     try {
-        console.log("process.env.NEXT_PUBLIC_BACKEND_URL", process.env.NEXT_PUBLIC_BACKEND_URL);
 
         const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/users/signup`, {
             method: "POST",
@@ -21,9 +20,6 @@ export async function signUpAction(formData: FormData) {
         })
 
         const data = await res.json().catch(() => null)
-        console.log(data);
-        console.log("res", res);
-
 
 
         if (!res.ok) {

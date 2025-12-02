@@ -1,4 +1,4 @@
-import Express, { RequestHandler } from "express";
+import express, { RequestHandler } from "express";
 import bodyParser from "body-parser";
 import cookieSession from "cookie-session";
 import { CustomError, errorHandler, getCurrentUser } from "@zspersonal/common";
@@ -8,7 +8,7 @@ import compression from 'compression';
 import morgan from 'morgan';
 
 
-const app = Express();
+const app = express();
 
 
 app.set("trust proxy", true);
@@ -31,8 +31,15 @@ app.use((req, res, next) => {
 });
 
 app.use(getCurrentUser as RequestHandler);
+app.use((req, res, next) => {
+    console.log('Current User:', req.currentUser);
+    next();
+});
 
 app.use("/api/payments", paymentRouter);
+
+
+
 
 
 app.use((req, res, next) => {

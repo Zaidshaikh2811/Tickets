@@ -13,7 +13,6 @@ export default function TicketsPage() {
         async function loadTickets() {
             try {
                 const { res, data } = await fetchAllTickets();
-                console.log("tickets:", { res, data });
 
                 if (!res.ok) {
                     setError(data?.message || "Failed to fetch tickets");

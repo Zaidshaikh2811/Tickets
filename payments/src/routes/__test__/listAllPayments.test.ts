@@ -21,7 +21,6 @@ it("returns all orders for admins", async () => {
         .get("/api/payments/user/payments")
         .set("Cookie", cookie)
         .expect(200);
-    console.log(res.body);
 
 
     expect(res.body.orders.length).toBe(2);

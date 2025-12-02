@@ -9,7 +9,6 @@ export async function signInAction(formData: FormData) {
     }
 
     try {
-        console.log(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/users/signin`);
 
         const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/users/signin`, {
             method: "POST",

@@ -41,7 +41,7 @@ export const getCurrentUser = asyncHandler(async (req: Request, res: Response, n
 
 
 export const signup = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
-    console.log("adsasdasdads");
+
 
     const { name, email, password } = req.body;
     const existingUser = await User.findOne({ email });

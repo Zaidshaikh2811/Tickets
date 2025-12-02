@@ -7,8 +7,7 @@ export class OrderCreatedListener extends Listener<OrderCreatedEvent> {
     queueGroupName = queueGroupName;
     async onMessage(data: OrderCreatedEvent["data"], msg: any) {
         const delay = Math.max(0, new Date(data.expiresAt).getTime() - Date.now());
-        console.log("Order Created Event Data:", data);
-        console.log("Delay 1(59990) updated min:", delay);
+
 
 
         console.log("Adding job to expiration queue for orderId:", data.id, "with delay:", delay);

@@ -1,13 +1,20 @@
-jest.mock("ioredis", () => {
-    const RedisMock = require("ioredis-mock");
-    class PatchedRedis extends RedisMock {
-        client() {
-            // just ignore it
-            return Promise.resolve("OK");
-        }
-    }
+import { RedisMemoryServer } from "redis-memory-server";
 
-    return PatchedRedis;
+let redisServer: RedisMemoryServer;
+
+beforeAll(async () => {
+    redisServer = new RedisMemoryServer();
+    const host = await redisServer.getHost();
+    const port = await redisServer.getPort();
+
+    process.env.REDIS_HOST = host;
+    process.env.REDIS_PORT = port.toString();
+});
+
+afterAll(async () => {
+    if (redisServer) {
+        await redisServer.stop();
+    }
 });
 
 jest.mock("../__mocks__/nats-wrapper.ts");

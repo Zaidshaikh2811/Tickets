@@ -12,11 +12,12 @@ it("returns only the current user's payments", async () => {
     const cookie = global.signin(user1);
 
     const res = await request(app)
-        .get("/user/payments")
+        .get("/api/payments/user-payments")
         .set("Cookie", cookie)
         .expect(200);
+    console.log(res.body);
 
 
 
-    expect(res.body.length).toBe(1);
+    expect(res.body.orders.length).toBe(1);
 });

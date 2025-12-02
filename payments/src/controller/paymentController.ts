@@ -31,7 +31,7 @@ const asyncHandler =
 
 const getCurrentUserId = (req: Request): string => {
     if (!req.currentUser?.id) {
-        // Should normally never happen if requireAuth is used
+
         throw new CustomError("Authentication required", 401);
     }
     return req.currentUser.id;
@@ -39,6 +39,8 @@ const getCurrentUserId = (req: Request): string => {
 
 const findUserOrderOrThrow = async (orderId: string, userId: string) => {
     const order = await Order.findById(orderId);
+
+    ;
 
     if (!order) {
         throw new CustomError("Order not found", 404);
@@ -57,7 +59,9 @@ export const paymentComplete = asyncHandler(
         const userId = getCurrentUserId(req);
         const { orderId, paymentMethod } = req.body;
 
+
         const order = await findUserOrderOrThrow(orderId, userId);
+
 
         if (order.status === OrderStatus.Cancelled) {
             throw new CustomError("Cannot pay for a cancelled order", 400);
@@ -90,7 +94,8 @@ export const paymentComplete = asyncHandler(
             paymentId: payment.id,
             orderId: payment.orderId,
             userId,
-            amount: order.price
+            amount: order.price,
+            ticketId: order.ticketId,
         });
 
         order.status = OrderStatus.Completed;
@@ -130,8 +135,10 @@ export const getPaymentStatus = asyncHandler(
 
 export const refundPayment = asyncHandler(
     async (req: Request, res: Response) => {
+
         const userId = getCurrentUserId(req);
         const { orderId } = req.body;
+
 
         const order = await findUserOrderOrThrow(orderId, userId);
 
@@ -142,9 +149,13 @@ export const refundPayment = asyncHandler(
             );
         }
 
+        const allPayment = await Payment.find();
+
         const payment = await Payment.findOne({ orderId: order.id }).sort({
             createdAt: -1,
         });
+
+
 
         if (!payment) {
             throw new CustomError(
@@ -152,6 +163,8 @@ export const refundPayment = asyncHandler(
                 400
             );
         }
+
+
 
         order.status = OrderStatus.Refunded;
         await order.save();
@@ -161,7 +174,9 @@ export const refundPayment = asyncHandler(
             orderId: order.id,
             userId: order.userId,
             amount: order.price,
+            ticketId: order.ticketId,
         });
+
 
         res.status(200).send({ success: true, order });
     }
@@ -231,6 +246,7 @@ export const cancelPayment = asyncHandler(
             orderId: order.id,
             userId: order.userId,
             amount: order.price,
+            ticketId: order.ticketId,
         });
 
         res.status(200).send({ success: true, order });
@@ -269,6 +285,7 @@ export const retryPayment = asyncHandler(
             orderId: payment.orderId,
             userId: order.userId,
             amount: order.price,
+            ticketId: order.ticketId,
 
         });
 

@@ -14,5 +14,6 @@ it("allows discount on valid order", async () => {
         .send({ orderId: order.id, discountCode: "SAVE10" })
         .expect(200);
 
-    expect(res.body.order.orderId).toBe(order.orderId);
+
+    expect(res.body.order.orderId).toBe(order.id);
 });
